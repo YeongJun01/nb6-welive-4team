@@ -12,3 +12,336 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id           String     @id @default(uuid())
+  username     String
+  password     String
+  contact      String     @unique
+  name         String
+  email        String     @unique
+  avatar       String?
+  role         UserType   @default(USER)
+  joinStatus   JoinStatus @default(PENDING)
+  isRegistered Boolean    @default(false)
+
+  apartmentId    String? //FA
+  residentListId String? @unique //FA
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete
+
+  userAptInfo  UserAptInfo?
+  apartment    Apartment?    @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  residentList ResidentList? @relation(fields: [residentListId], references: [id], onDelete: SetNull)
+
+  polls             Poll[]
+  notices           Notice[]
+  complaintCreators Complaint[]        @relation(name: "User2Creator")
+  complaintAdmins   Complaint[]        @relation(name: "User2Admin")
+  complaintComments ComplaintComment[]
+  noticeComments    NoticeComment[]
+  notifications     Notification[]
+  votes             Vote[]
+  board             Board?
+  events            Event[]
+}
+
+model UserAptInfo {
+  id            String    @id @default(uuid())
+  userId        String    @unique //FK
+  apartmentName String // user.apartment.name
+  apartmentDong Int
+  apartmentHo   Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // soft delete
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ResidentList {
+  id          String        @id @default(uuid())
+  apartmentId String //FA
+  building    Int // dong
+  unitNumber  Int // ho
+  contact     String        @unique
+  name        String
+  houseRole   HouseholdRole @default(HOUSEHOLDER)
+
+  residenceStatus ResidenceStatus @default(RESIDENCE)
+  isRegistered    Boolean         @default(true)
+  approvalStatus  ApprovalStatus  @default(PENDING) // 중복 resident.approvalStatus 회원가입 승인 상태
+  email           String? // 중복 user.email
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime? // soft delete
+
+  user      User?
+  apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+}
+
+model Apartment {
+  id           String @id @default(uuid())
+  name         String
+  address      String
+  officeNumber String @unique
+  description  String
+
+  startComplexNumber Int @default(1)
+  startDongNumber    Int @default(1)
+  startFloorNumber   Int @default(1)
+  startHoNumber      Int @default(1)
+  endComplexNumber   Int
+  endDongNumber      Int
+  endFloorNumber     Int
+  endHoNumber        Int
+
+  apartmentStatus ApprovalStatus @default(PENDING)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime? // soft delete
+
+  users     User[] // users, admim
+  residents ResidentList[] // users
+  boards    Board[]
+
+  @@unique([name, address])
+}
+
+model Board {
+  id          String    @id @default(uuid())
+  adminId     String    @unique //FA
+  apartmentId String //FA
+  boardType   BoardType
+
+  admin     User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  complaints Complaint[]
+  polls      Poll[]
+  notices    Notice[]
+
+  @@unique([apartmentId, boardType])
+}
+
+model Complaint {
+  id        String @id @default(uuid())
+  boardId   String //FK
+  creatorId String //FK
+  adminId   String //FK
+
+  title     String
+  content   String
+  isPublic  Boolean         @default(true)
+  status    ComplaintStatus @default(PENDING)
+  viewCount Int             @default(0)
+  // commentCount Int // comments.length
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  deletedAt DateTime? // soft delete
+
+  creator  User               @relation(name: "User2Creator", fields: [creatorId], references: [id])
+  admin    User               @relation(name: "User2Admin", fields: [adminId], references: [id])
+  board    Board              @relation(fields: [boardId], references: [id])
+  comments ComplaintComment[]
+}
+
+model Poll {
+  id      String @id @default(uuid())
+  boardId String //FK
+  adminId String //FK 
+
+  buildingPermission String[]
+  title              String
+  description        String
+  startDate          DateTime
+  endDate            DateTime
+  status             PollStatus
+  pollResult         String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete
+
+  admin       User         @relation(fields: [adminId], references: [id])
+  board       Board        @relation(fields: [boardId], references: [id])
+  votes       Vote[]
+  pollOptions PollOption[]
+  events      Event[]
+}
+
+model PollOption {
+  id        String   @id @default(uuid())
+  pollId    String // FK
+  content   String // 각 선택지
+  voteCount Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  poll  Poll   @relation(fields: [pollId], references: [id])
+  votes Vote[]
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  pollId    String // FK
+  optionId  String //FK 선택지
+  userId    String //FK 선택한 사람
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  poll    Poll       @relation(fields: [pollId], references: [id])
+  options PollOption @relation(fields: [optionId], references: [id])
+  user    User       @relation(fields: [userId], references: [id])
+}
+
+// 마감된 투표는 공지에 자동 등록
+model Notice {
+  id      String @id @default(uuid())
+  boardId String // FK
+  adminId String // FK
+
+  category  NoticeType
+  isPinned  Boolean    @default(false)
+  startDate DateTime? // null if scheduled = false
+  endDate   DateTime? // null if scheduled = false
+  title     String
+  content   String
+  viewCount Int        @default(0)
+  //commentCount Int        @default(0) // 중복 comments.length
+  //writerName String // 중복 admin.name
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete
+
+  board    Board           @relation(fields: [boardId], references: [id])
+  admin    User            @relation(fields: [adminId], references: [id])
+  comments NoticeComment[]
+  events   Event[]
+}
+
+model Notification {
+  id     String @id @default(uuid())
+  userId String //FK
+
+  notiType  NotificationType
+  title     String
+  content   String
+  url       String
+  isChecked Boolean          @default(false)
+
+  createdAt DateTime  @default(now())
+  checkedAt DateTime? // updatedAt으로 출력해야 함
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ComplaintComment {
+  id          String @id @default(uuid())
+  userId      String //FA
+  complaintId String //FA
+
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id])
+  complaint Complaint @relation(fields: [complaintId], references: [id])
+}
+
+model NoticeComment {
+  id       String @id @default(uuid())
+  userId   String // FA
+  noticeId String // FA
+
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  notice Notice @relation(fields: [noticeId], references: [id])
+}
+
+model Event {
+  id       String  @id @default(uuid())
+  adminId  String //FK
+  noticeId String? //FK
+  pollId   String? //FK
+
+  title     String // notice.title 또는 poll.title
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  admin  User    @relation(fields: [adminId], references: [id])
+  notice Notice? @relation(fields: [noticeId], references: [id])
+  poll   Poll?   @relation(fields: [pollId], references: [id])
+}
+
+enum UserType {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum JoinStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEED_UPDATE
+  MOVED_OUT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ResidenceStatus {
+  RESIDENCE
+  NO_RESIDENCE
+}
+
+enum HouseholdRole {
+  HOUSEHOLDER
+  MEMBER
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum PollStatus {
+  UPCOMING
+  ONGOING
+  CLOSED
+}
+
+enum NoticeType {
+  MAINTENANCE
+  URGENT
+  COMMUNITY
+  POLL
+  COMPLAINT
+  GENERAL
+}
+
+enum BoardType {
+  NOTICE
+  POLL
+  COMPLAINT
+}
+
+enum NotificationType {
+  NOTICE
+  COMPLAINT_RAISED
+  COMPLAINT_RESOLVED
+  POLL_START
+  POLL_END
+}
