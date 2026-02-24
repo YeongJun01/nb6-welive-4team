@@ -44,7 +44,7 @@ model User {
   noticeComments    NoticeComment[]
   notifications     Notification[]
   votes             Vote[]
-  board             Board?
+  board             Board[]
   events            Event[]
 }
 
@@ -52,8 +52,8 @@ model UserAptInfo {
   id            String    @id @default(uuid())
   userId        String    @unique //FK
   apartmentName String // user.apartment.name
-  apartmentDong Int
-  apartmentHo   Int
+  apartmentDong String
+  apartmentHo   String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // soft delete
@@ -64,8 +64,8 @@ model UserAptInfo {
 model ResidentList {
   id          String        @id @default(uuid())
   apartmentId String //FA
-  building    Int // dong
-  unitNumber  Int // ho
+  building    String // dong
+  unitNumber  String // ho
   contact     String        @unique
   name        String
   houseRole   HouseholdRole @default(HOUSEHOLDER)
@@ -112,7 +112,7 @@ model Apartment {
 
 model Board {
   id          String    @id @default(uuid())
-  adminId     String    @unique //FA
+  adminId     String //FA
   apartmentId String //FA
   boardType   BoardType
 
@@ -187,14 +187,16 @@ model PollOption {
 model Vote {
   id        String   @id @default(uuid())
   pollId    String // FK
-  optionId  String //FK 선택지
-  userId    String //FK 선택한 사람
+  optionId  String // FK 선택지
+  userId    String // FK 선택한 사람
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   poll    Poll       @relation(fields: [pollId], references: [id])
   options PollOption @relation(fields: [optionId], references: [id])
   user    User       @relation(fields: [userId], references: [id])
+
+  @@unique([pollId, userId])
 }
 
 // 마감된 투표는 공지에 자동 등록
