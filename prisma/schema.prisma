@@ -14,16 +14,16 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  username     String
-  password     String
-  contact      String     @unique
-  name         String
-  email        String     @unique
-  avatar       String?
-  role         UserType   @default(USER)
-  joinStatus   JoinStatus @default(PENDING)
-  isRegistered Boolean    @default(false)
+  id         String     @id @default(uuid())
+  username   String
+  password   String
+  contact    String     @unique
+  name       String
+  email      String     @unique
+  avatar     String?
+  role       UserType   @default(USER)
+  joinStatus JoinStatus @default(PENDING)
+  //isRegistered Boolean    @default(false) // DTO에서 사용, 스키마에서 제외
 
   apartmentId    String? //FA
   residentListId String? @unique //FA
@@ -51,7 +51,7 @@ model User {
 model UserAptInfo {
   id            String    @id @default(uuid())
   userId        String    @unique //FK
-  apartmentName String // user.apartment.name
+  //apartmentName String // user.apartment.name
   apartmentDong String
   apartmentHo   String
   createdAt     DateTime  @default(now())
@@ -62,13 +62,13 @@ model UserAptInfo {
 }
 
 model ResidentList {
-  id          String        @id @default(uuid())
-  apartmentId String //FA
-  building    String // dong
-  unitNumber  String // ho
-  contact     String        @unique
-  name        String
-  houseRole   HouseholdRole @default(HOUSEHOLDER)
+  id            String        @id @default(uuid())
+  apartmentId   String //FA
+  apartmentDong String // dong
+  apartmentHo   String // ho
+  contact       String        @unique
+  name          String
+  houseRole     HouseholdRole @default(HOUSEHOLDER)
 
   residenceStatus ResidenceStatus @default(RESIDENCE)
   isRegistered    Boolean         @default(true)
@@ -89,14 +89,14 @@ model Apartment {
   officeNumber String @unique
   description  String
 
-  startComplexNumber Int @default(1)
-  startDongNumber    Int @default(1)
-  startFloorNumber   Int @default(1)
-  startHoNumber      Int @default(1)
-  endComplexNumber   Int
-  endDongNumber      Int
-  endFloorNumber     Int
-  endHoNumber        Int
+  startComplexNumber  Int @default(1)
+  startBuildingNumber Int @default(1)
+  startFloorNumber    Int @default(1)
+  startUnitNumber     Int @default(1)
+  endComplexNumber    Int
+  endBuildingNumber   Int
+  endFloorNumber      Int
+  endUnitNumber       Int
 
   apartmentStatus ApprovalStatus @default(PENDING)
   createdAt       DateTime       @default(now())
@@ -153,13 +153,13 @@ model Poll {
   boardId String //FK
   adminId String //FK 
 
-  buildingPermission String[]
+  buildingPermission String[] // 동 배열, []이면 전체 허용
   title              String
   description        String
   startDate          DateTime
   endDate            DateTime
   status             PollStatus
-  pollResult         String?
+  //pollResult         String? // pollOptions의 content와 voteCount로 계산
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -320,18 +320,18 @@ enum ComplaintStatus {
 }
 
 enum PollStatus {
-  UPCOMING
-  ONGOING
+  UPCOMING //PENDING
+  ONGOING //IN_PROGRESS
   CLOSED
 }
 
 enum NoticeType {
-  MAINTENANCE
-  URGENT
-  COMMUNITY
-  POLL
-  COMPLAINT
-  GENERAL
+  MAINTENANCE // 정기점검
+  EMERGENCY // 긴급 공지
+  COMMUNITY //커뮤니티
+  RESIDENT_VOTE // 주민투표
+  RESIDENT_COUNCIL // 주민회의
+  ETC // 기타
 }
 
 enum BoardType {
@@ -341,9 +341,10 @@ enum BoardType {
 }
 
 enum NotificationType {
-  NOTICE
-  COMPLAINT_RAISED
-  COMPLAINT_RESOLVED
-  POLL_START
-  POLL_END
+  NOTICE //공지사항 등록 - 입주민
+  COMPLAINT_RAISED //민원 등록 - 관리자
+  COMPLAINT_RESOLVED // 민원 처리 완료 - 입주민
+  POLL_START // 투표 시작 - 입주민
+  POLL_END // 투표 종료 - 입주민, (관리자?)
+  SIGNUP_REQ // 입주민 회원가입 요청 - 관리자, 관리자 회원가입 요청 - 슈퍼 관리자
 }
