@@ -14,27 +14,27 @@ datasource db {
 }
 
 model User {
-  id         String     @id @default(uuid())
+  id         String   @id @default(uuid())
   username   String
   password   String
-  contact    String     @unique
+  contact    String   @unique
   name       String
-  email      String     @unique
+  email      String   @unique
   avatar     String?
-  role       UserType   @default(USER)
-  joinStatus JoinStatus @default(PENDING)
+  role       UserType @default(USER)
+  joinStatus Status   @default(PENDING)
   //isRegistered Boolean    @default(false) // DTO에서 사용, 스키마에서 제외
 
-  apartmentId    String? //FA
-  residentListId String? @unique //FA
+  apartmentId String? // FK
+  //residentListId String? @unique // FK
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // soft delete
 
-  userAptInfo  UserAptInfo?
-  apartment    Apartment?    @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
-  residentList ResidentList? @relation(fields: [residentListId], references: [id], onDelete: SetNull)
+  // userAptInfo  UserAptInfo?
+  apartment Apartment? @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  //residentList ResidentList? @relation(fields: [residentListId], references: [id], onDelete: SetNull)
 
   polls             Poll[]
   notices           Notice[]
@@ -46,39 +46,43 @@ model User {
   votes             Vote[]
   board             Board[]
   events            Event[]
+  residentLists     ResidentList?
 }
 
-model UserAptInfo {
-  id            String    @id @default(uuid())
-  userId        String    @unique //FK
-  //apartmentName String // user.apartment.name
-  apartmentDong String
-  apartmentHo   String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime? // soft delete
+// model UserAptInfo {
+//   id            String    @id @default(uuid())
+//   userId        String    @unique //FK
+//   //apartmentName String // user.apartment.name
+//   apartmentDong String
+//   apartmentHo   String
+//   createdAt     DateTime  @default(now())
+//   updatedAt     DateTime  @updatedAt
+//   deletedAt     DateTime? // soft delete
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+// }
 
 model ResidentList {
-  id            String        @id @default(uuid())
-  apartmentId   String //FA
+  id            String  @id @default(uuid())
+  userId        String? @unique // FK
+  apartmentId   String // FK
   apartmentDong String // dong
   apartmentHo   String // ho
-  contact       String        @unique
+  contact       String
   name          String
-  houseRole     HouseholdRole @default(HOUSEHOLDER)
+  isHouseholder Boolean @default(true)
+  // houseRole     HouseholdRole @default(HOUSEHOLDER)
 
-  residenceStatus ResidenceStatus @default(RESIDENCE)
-  isRegistered    Boolean         @default(true)
-  approvalStatus  ApprovalStatus  @default(PENDING) // 중복 resident.approvalStatus 회원가입 승인 상태
-  email           String? // 중복 user.email
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime? // soft delete
+  // residenceStatus ResidenceStatus @default(RESIDENCE)
+  isRegistered   Boolean   @default(true)
+  approvalStatus Status    @default(PENDING) // 중복 resident.approvalStatus 회원가입 승인 상태
+  email          String? // 중복 user.email
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime? // soft delete
 
-  user      User?
+  //user      User?
+  user      User?     @relation(fields: [userId], references: [id])
   apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 }
 
@@ -98,9 +102,9 @@ model Apartment {
   endFloorNumber      Int
   endUnitNumber       Int
 
-  apartmentStatus ApprovalStatus @default(PENDING)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  apartmentStatus Status    @default(PENDING)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   deletedAt       DateTime? // soft delete
 
   users     User[] // users, admim
@@ -112,8 +116,8 @@ model Apartment {
 
 model Board {
   id          String    @id @default(uuid())
-  adminId     String //FA
-  apartmentId String //FA
+  adminId     String // FA
+  apartmentId String // FA
   boardType   BoardType
 
   admin     User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
@@ -128,9 +132,9 @@ model Board {
 
 model Complaint {
   id        String @id @default(uuid())
-  boardId   String //FK
-  creatorId String //FK
-  adminId   String //FK
+  boardId   String // FK
+  creatorId String // FK
+  adminId   String // FK
 
   title     String
   content   String
@@ -150,8 +154,8 @@ model Complaint {
 
 model Poll {
   id      String @id @default(uuid())
-  boardId String //FK
-  adminId String //FK 
+  boardId String // FK
+  adminId String // FK 
 
   buildingPermission String[] // 동 배열, []이면 전체 허용
   title              String
@@ -227,7 +231,7 @@ model Notice {
 
 model Notification {
   id     String @id @default(uuid())
-  userId String //FK
+  userId String // FK
 
   notiType  NotificationType
   title     String
@@ -243,8 +247,8 @@ model Notification {
 
 model ComplaintComment {
   id          String @id @default(uuid())
-  userId      String //FA
-  complaintId String //FA
+  userId      String // FK
+  complaintId String // FK
 
   content   String
   createdAt DateTime @default(now())
@@ -256,8 +260,8 @@ model ComplaintComment {
 
 model NoticeComment {
   id       String @id @default(uuid())
-  userId   String // FA
-  noticeId String // FA
+  userId   String // FK
+  noticeId String // FK
 
   content   String
   createdAt DateTime @default(now())
@@ -269,9 +273,9 @@ model NoticeComment {
 
 model Event {
   id       String  @id @default(uuid())
-  adminId  String //FK
-  noticeId String? //FK
-  pollId   String? //FK
+  adminId  String // FK
+  noticeId String? // FK
+  pollId   String? // FK
 
   title     String // notice.title 또는 poll.title
   createdAt DateTime @default(now())
@@ -288,7 +292,7 @@ enum UserType {
   USER
 }
 
-enum JoinStatus {
+enum Status {
   PENDING
   APPROVED
   REJECTED
@@ -296,21 +300,30 @@ enum JoinStatus {
   MOVED_OUT
 }
 
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
+// enum JoinStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+//   NEED_UPDATE
+//   MOVED_OUT
+// }
 
-enum ResidenceStatus {
-  RESIDENCE
-  NO_RESIDENCE
-}
+// enum ApprovalStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+// }
 
-enum HouseholdRole {
-  HOUSEHOLDER
-  MEMBER
-}
+// enum ResidenceStatus {
+//   RESIDENCE
+//   NO_RESIDENCE
+// }
+
+// enum HouseholdRole {
+//   HOUSEHOLDER
+//   MEMBER
+//   LANDLORD
+// }
 
 enum ComplaintStatus {
   PENDING

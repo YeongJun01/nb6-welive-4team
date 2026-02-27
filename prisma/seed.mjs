@@ -1,9 +1,6 @@
-import { ApprovalStatus, PrismaClient, ResidenceStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { fakerKO as faker } from '@faker-js/faker';
 import bcrypt from 'bcrypt';
-import { is } from 'superstruct';
-import { start } from 'repl';
-import { title } from 'process';
 
 const prisma = new PrismaClient();
 
@@ -172,8 +169,6 @@ async function main() {
     };
   });
 
-  await prisma.userAptInfo.createMany({ data: userAptInfosData });
-
   // 아파트의 거주자 리스트 생성
   await Promise.all(
     createdUsers.map(async (user, index) => {
@@ -181,22 +176,17 @@ async function main() {
 
       const residentList = await prisma.residentList.create({
         data: {
+          userId: user.id,
           apartmentId: user.apartmentId,
           apartmentDong: aptInfo.apartmentDong,
           apartmentHo: aptInfo.apartmentHo,
           contact: user.contact,
           name: user.name,
-          houseRole: 'HOUSEHOLDER', // 모든 유저를 세대주로 설정 (테스트 편의성)
-          residenceStatus: 'RESIDENCE', // 모든 거주자 상태를 거주자로 설정 (테스트 편의성)
+          isHouseholder: true, // 모든 유저를 세대주로 설정 (테스트 편의성)
           isRegistered: true,
           approvalStatus: 'APPROVED', // 모든 거주자 승인 상태를 승인으로 설정 (테스트 편의성)
           email: user.email,
         },
-      });
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { residentListId: residentList.id },
       });
     }),
   );
@@ -248,6 +238,7 @@ async function main() {
   createdAdminUsers.forEach((admin) => {
     const noticeCount = 3;
     for (let i = 0; i < noticeCount; i++) {
+      const hasDate = faker.datatype.boolean();
       noticesData.push({
         boardId: createdBoards.find(
           (board) => board.apartmentId === admin.apartmentId && board.boardType === 'NOTICE',
@@ -255,11 +246,8 @@ async function main() {
         adminId: admin.id,
         category: faker.helpers.arrayElement(noticeCategories), // 공지사항 카테고리 후보 배열에서 랜덤 선택
         isPinned: faker.datatype.boolean(), // 공지사항 고정 여부 랜덤 설정
-        ...(faker.datatype.boolean() && {
-          // 랜덤으로 날짜를 설정할지 말지 결정
-          startDate: faker.date.past(), // 공지사항 시작 날짜 랜덤 설정 (과거 날짜)
-          endDate: faker.date.future(), // 공지사항 종료 날짜 랜덤 설정 (미래 날짜)
-        }),
+        startDate: hasDate ? faker.date.past() : null,
+        endDate: hasDate ? faker.date.future() : null,
         title: `공지사항 ${i + 1}`,
         content: faker.helpers.arrayElement(noticeContents), // 공지사항 내용 배열에서 랜덤 선택
         viewCount: faker.number.int({ min: 0, max: 100 }), // 조회수 랜덤 설정
@@ -648,6 +636,7 @@ async function main() {
       eventsData.push({
         adminId: notice.adminId,
         noticeId: notice.id,
+        pollId: null,
         title: notice.title,
       });
     }
@@ -657,6 +646,7 @@ async function main() {
     if (poll.startDate && poll.endDate) {
       eventsData.push({
         adminId: poll.adminId,
+        noticeId: null,
         pollId: poll.id,
         title: poll.title,
       });
@@ -673,7 +663,6 @@ async function main() {
     Apartments: await prisma.apartment.count(),
     Users: await prisma.user.count(),
     ResidentLists: await prisma.residentList.count(),
-    UserAptInfos: await prisma.userAptInfo.count(),
     Boards: await prisma.board.count(),
     Notices: await prisma.notice.count(),
     Complaints: await prisma.complaint.count(),
