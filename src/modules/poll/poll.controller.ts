@@ -1,11 +1,17 @@
 import { Request, Response } from 'express';
 import pollService from './poll.service';
+import { create } from 'superstruct';
+import pollStruct from './poll.validation';
 
 class PollController {
   // 투표 생성
   createPoll = async (req: Request, res: Response) => {
-    console.log('test poll create');
-    pollService.createPoll(1);
+    const data = create(req.body, pollStruct.createPoll);
+    const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
+    // const adminId = req.user?.id
+    const poll = await pollService.createPoll(data, adminId);
+
+    res.status(201).json({ message: '정상적으로 등록 처리되었습니다' });
   };
 
   // 투표 목록 조회
