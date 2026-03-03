@@ -30,8 +30,10 @@ class PollController {
 
   // 투표 상세 조회
   getPollInfo = async (req: Request, res: Response) => {
-    console.log('test poll getPollInfo');
-    pollService.getPollInfo(1);
+    const pollId = mask(req.params.pollId, pollStruct.uuid);
+    const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
+    const pollInfo = await pollService.getPollInfo(pollId, boardId);
+    res.status(200).json(pollInfo);
   };
 
   // 투표 수정

@@ -6,24 +6,20 @@ import pollRepository from './poll.repository';
 type Poll = Infer<typeof pollStruct.createPoll>;
 
 class PollService {
-  mapPollResponse = (poll: any) => {
-    let pollStatus: 'PENDING' | 'IN_PROGRESS' | 'CLOSED';
-
-    switch (poll.status) {
+  private getMappedStatus = (status: string) => {
+    switch (status) {
       case 'UPCOMING':
-        pollStatus = 'PENDING';
-        break;
+        return 'PENDING';
       case 'ONGOING':
-        pollStatus = 'IN_PROGRESS';
-        break;
+        return 'IN_PROGRESS';
       case 'CLOSED':
-        pollStatus = 'CLOSED';
-        break;
+        return 'CLOSED';
       default:
-        pollStatus = 'CLOSED';
-        break;
+        return 'CLOSED';
     }
+  };
 
+  private mapPollList = (poll: any) => {
     return {
       pollId: poll.id,
       userId: poll.adminId,
@@ -34,7 +30,20 @@ class PollService {
       updatedAt: poll.updatedAt,
       startDate: poll.startDate,
       endDate: poll.endDate,
-      status: pollStatus,
+      status: this.getMappedStatus(poll.status),
+    };
+  };
+
+  private mapPollInfo = (poll: any) => {
+    return {
+      ...this.mapPollList(poll),
+      boardName: '주민 투표',
+      content: poll.description,
+      options: poll.pollOptions.map((option: any) => ({
+        optionId: option.id,
+        content: option.content,
+        voteCount: option.voteCount === null ? 0 : option.voteCount,
+      })),
     };
   };
 
@@ -99,12 +108,24 @@ class PollService {
       boardId,
     );
 
-    return { pollList: pollList.map((poll: any) => this.mapPollResponse(poll)), totalCount };
+    return {
+      pollList: pollList.map((poll: any) => this.mapPollList(poll)),
+      totalCount,
+    };
   };
 
   // 투표 상세 조회
-  getPollInfo = async (data: any) => {
-    console.log('test service poll getPollInfo', data);
+  getPollInfo = async (pollId: string, boardId: string) => {
+    const pollInfo = await pollRepository.getPollInfo(pollId);
+    if (!pollInfo) {
+      throw new BadRequestError('존재하지 않는 투표입니다.');
+    }
+
+    if (pollInfo.boardId !== boardId) {
+      throw new BadRequestError('접근 권한이 없습니다.');
+    }
+
+    return this.mapPollInfo(pollInfo);
   };
 
   // 투표 수정

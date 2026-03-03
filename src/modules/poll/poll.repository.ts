@@ -26,7 +26,7 @@ class PollRepository {
       });
 
       await db.pollOption.createMany({
-        data: options.map((option) => ({
+        data: options.map((option: any) => ({
           pollId: newPoll.id,
           content: option.title,
         })),
@@ -73,6 +73,30 @@ class PollRepository {
     ]);
 
     return { pollList, totalCount };
+  };
+
+  getPollInfo = async (pollId: string) => {
+    const pollInfo = await prisma.poll.findUnique({
+      where: {
+        id: pollId,
+      },
+      include: {
+        admin: {
+          select: {
+            name: true,
+          },
+        },
+        pollOptions: {
+          select: {
+            id: true,
+            content: true,
+            voteCount: true,
+          },
+        },
+      },
+    });
+
+    return pollInfo;
   };
 }
 
