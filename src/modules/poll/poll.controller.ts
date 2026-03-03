@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import pollService from './poll.service';
-import { create } from 'superstruct';
+import { create, mask } from 'superstruct';
 import pollStruct from './poll.validation';
 
 class PollController {
@@ -16,8 +16,16 @@ class PollController {
 
   // 투표 목록 조회
   getPollList = async (req: Request, res: Response) => {
-    console.log('test poll getPollList');
-    pollService.getPollList(1);
+    const parsedQuery = {
+      ...req.query,
+      page: req.query.page ? Number(req.query.page) : undefined,
+      limit: req.query.limit ? Number(req.query.limit) : undefined,
+    };
+    const query = mask(parsedQuery, pollStruct.getPollList);
+    const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
+    // const boardId = req.params.board.pollId;
+    const pollList = await pollService.getPollList(query, boardId);
+    res.status(200).json(pollList);
   };
 
   // 투표 상세 조회

@@ -8,6 +8,8 @@ type Poll = Omit<Infer<typeof pollStruct.createPoll>, 'status'> & {
   status: DbPollStatus;
 };
 
+type OrderBy = 'asc' | 'desc';
+
 class PollRepository {
   createPoll = async (data: Poll, adminId: string) => {
     const { startDate, endDate, options, content, ...pollData } = data;
@@ -34,6 +36,43 @@ class PollRepository {
     });
 
     return poll;
+  };
+
+  getPollList = async (query: any, boardId: string) => {
+    const [pollList, totalCount] = await Promise.all([
+      prisma.poll.findMany({
+        where: {
+          boardId,
+          status: query.status,
+          OR: [
+            { title: { contains: query.keyword, mode: 'insensitive' } },
+            { description: { contains: query.keyword, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { createdAt: query.orderBy },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        include: {
+          admin: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      }),
+      prisma.poll.count({
+        where: {
+          boardId,
+          status: query.status,
+          OR: [
+            { title: { contains: query.keyword, mode: 'insensitive' } },
+            { description: { contains: query.keyword, mode: 'insensitive' } },
+          ],
+        },
+      }),
+    ]);
+
+    return { pollList, totalCount };
   };
 }
 

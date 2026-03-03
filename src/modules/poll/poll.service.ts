@@ -6,6 +6,38 @@ import pollRepository from './poll.repository';
 type Poll = Infer<typeof pollStruct.createPoll>;
 
 class PollService {
+  mapPollResponse = (poll: any) => {
+    let pollStatus: 'PENDING' | 'IN_PROGRESS' | 'CLOSED';
+
+    switch (poll.status) {
+      case 'UPCOMING':
+        pollStatus = 'PENDING';
+        break;
+      case 'ONGOING':
+        pollStatus = 'IN_PROGRESS';
+        break;
+      case 'CLOSED':
+        pollStatus = 'CLOSED';
+        break;
+      default:
+        pollStatus = 'CLOSED';
+        break;
+    }
+
+    return {
+      pollId: poll.id,
+      userId: poll.adminId,
+      title: poll.title,
+      writerName: poll.admin?.name,
+      buildingPermission: poll.buildingPermission,
+      createdAt: poll.createdAt,
+      updatedAt: poll.updatedAt,
+      startDate: poll.startDate,
+      endDate: poll.endDate,
+      status: pollStatus,
+    };
+  };
+
   // 투표 생성
   createPoll = async (data: Poll, adminId: string) => {
     // user 기능 추가 필요
@@ -42,8 +74,32 @@ class PollService {
   };
 
   // 투표 목록 조회
-  getPollList = async (data: any) => {
-    console.log('test service poll getPollList', data);
+  getPollList = async (query: any, boardId: string) => {
+    const orderBy = query.orderBy === 'oldest' ? 'asc' : 'desc';
+
+    let pollStatus: 'UPCOMING' | 'ONGOING' | 'CLOSED' | undefined;
+
+    switch (query.status) {
+      case 'PENDING':
+        pollStatus = 'UPCOMING';
+        break;
+      case 'IN_PROGRESS':
+        pollStatus = 'ONGOING';
+        break;
+      case 'CLOSED':
+        pollStatus = 'CLOSED';
+        break;
+      default:
+        pollStatus = undefined;
+        break;
+    }
+
+    const { pollList, totalCount } = await pollRepository.getPollList(
+      { ...query, status: pollStatus, orderBy },
+      boardId,
+    );
+
+    return { pollList: pollList.map((poll: any) => this.mapPollResponse(poll)), totalCount };
   };
 
   // 투표 상세 조회
