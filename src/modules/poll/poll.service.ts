@@ -2,10 +2,26 @@ import { Infer } from 'superstruct';
 import pollStruct from './poll.validation';
 import BadRequestError from '../../lib/errors/BadRequestError';
 import pollRepository from './poll.repository';
+import { userRepo } from './poll.repository';
 
 type Poll = Infer<typeof pollStruct.createPoll>;
 
 class PollService {
+  private dbMappedStatus = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'UPCOMING';
+      case 'IN_PROGRESS':
+        return 'ONGOING';
+      case 'CLOSED':
+        return 'CLOSED';
+      case 'ALL':
+        return 'ALL';
+      default:
+        throw new BadRequestError('상태가 올바르지 않습니다.');
+    }
+  };
+
   private getMappedStatus = (status: string) => {
     switch (status) {
       case 'UPCOMING':
@@ -15,7 +31,7 @@ class PollService {
       case 'CLOSED':
         return 'CLOSED';
       default:
-        return 'CLOSED';
+        throw new BadRequestError('상태가 올바르지 않습니다.');
     }
   };
 
@@ -51,57 +67,54 @@ class PollService {
   createPoll = async (data: Poll, adminId: string) => {
     // user 기능 추가 필요
 
-    const { startDate, endDate, options, content, ...pollData } = data;
+    const { options, status, ...pollData } = data;
+
+    const today = new Date();
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+
+    if (startDate < today) {
+      throw new BadRequestError('투표 시작일을 재설정 바랍니다.');
+    }
 
     if (startDate > endDate) {
-      throw new BadRequestError('시작일이 종료일보다 클 수 없습니다.');
+      throw new BadRequestError('투표 시작일이 종료일보다 빠를 수 없습니다.');
     }
 
     if (options.length < 2) {
       throw new BadRequestError('선택지는 2개 이상이어야 합니다.');
     }
 
-    let pollStatus: 'UPCOMING' | 'ONGOING' | 'CLOSED';
+    const pollStatus = this.dbMappedStatus(status);
 
-    switch (data.status) {
-      case 'PENDING':
-        pollStatus = 'UPCOMING';
-        break;
-      case 'IN_PROGRESS':
-        pollStatus = 'ONGOING';
-        break;
-      case 'CLOSED':
-        pollStatus = 'CLOSED';
-        break;
-      default:
-        throw new BadRequestError('상태가 올바르지 않습니다.');
+    if (pollStatus === 'ALL') {
+      throw new BadRequestError('상태가 올바르지 않습니다.');
     }
 
-    const poll = await pollRepository.createPoll({ ...data, status: pollStatus }, adminId);
+    const poll = await pollRepository.createPoll(
+      { ...data, status: pollStatus, startDate, endDate },
+      adminId,
+    );
 
     return poll;
   };
 
   // 투표 목록 조회
-  getPollList = async (query: any, boardId: string) => {
+  getPollList = async (query: any, boardId: string, userId: string) => {
+    // 임의로 정렬 추가
     const orderBy = query.orderBy === 'oldest' ? 'asc' : 'desc';
+    const pollStatus = this.dbMappedStatus(query.status);
 
-    let pollStatus: 'UPCOMING' | 'ONGOING' | 'CLOSED' | undefined;
+    // 유저 기능 생성 후 추가 작업 진행
+    // const user = await userRepo.getResident(userId);
+    // if (!user) {
+    //   throw new BadRequestError('존재하지 않는 유저입니다.');
+    // }
 
-    switch (query.status) {
-      case 'PENDING':
-        pollStatus = 'UPCOMING';
-        break;
-      case 'IN_PROGRESS':
-        pollStatus = 'ONGOING';
-        break;
-      case 'CLOSED':
-        pollStatus = 'CLOSED';
-        break;
-      default:
-        pollStatus = undefined;
-        break;
-    }
+    // const buildingPermission = query.buildingPermission
+    //   ? query.buildingPermission
+    //   : [user.apartmentDong, 'all'];
+    // getPollList 객체에 값 전달
 
     const { pollList, totalCount } = await pollRepository.getPollList(
       { ...query, status: pollStatus, orderBy },
@@ -124,6 +137,14 @@ class PollService {
     if (pollInfo.boardId !== boardId) {
       throw new BadRequestError('접근 권한이 없습니다.');
     }
+
+    // 일반 유저 정보를 기반으로 동 설정 필요
+    // if (
+    //   pollInfo.buildingPermission !== 'ALL' &&
+    //   pollInfo.buildingPermission !== userInfo.residentLists.apartmentDong
+    // ) {
+    //   throw new BadRequestError('접근 권한이 없습니다.');
+    // }
 
     return this.mapPollInfo(pollInfo);
   };

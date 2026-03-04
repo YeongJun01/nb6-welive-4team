@@ -4,23 +4,41 @@ import pollStruct from './poll.validation';
 
 type DbPollStatus = 'UPCOMING' | 'ONGOING' | 'CLOSED';
 
-type Poll = Omit<Infer<typeof pollStruct.createPoll>, 'status'> & {
+type Poll = Omit<Infer<typeof pollStruct.createPoll>, 'status' | 'startDate' | 'endDate'> & {
   status: DbPollStatus;
+  startDate: Date;
+  endDate: Date;
 };
 
 type OrderBy = 'asc' | 'desc';
 
+class UserRepo {
+  getResident = async (userId: string) => {
+    const resident = await prisma.residentList.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        apartmentDong: true,
+      },
+    });
+    return resident;
+  };
+}
+
+const userRepo = new UserRepo();
+
+export { userRepo };
+
 class PollRepository {
   createPoll = async (data: Poll, adminId: string) => {
-    const { startDate, endDate, options, content, ...pollData } = data;
+    const { options, content, ...pollData } = data;
 
     const poll = await prisma.$transaction(async (db) => {
       const newPoll = await db.poll.create({
         data: {
           ...pollData,
           adminId,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
           description: content,
         },
       });
@@ -43,7 +61,13 @@ class PollRepository {
       prisma.poll.findMany({
         where: {
           boardId,
-          status: query.status,
+          // buildingPermission: {
+          //   hasSome: query.buildingPermission,
+          // },
+          buildingPermission: query.buildingPermission
+            ? { hasSome: query.buildingPermission }
+            : undefined,
+          status: query.status === 'ALL' ? undefined : query.status,
           OR: [
             { title: { contains: query.keyword, mode: 'insensitive' } },
             { description: { contains: query.keyword, mode: 'insensitive' } },
@@ -63,7 +87,13 @@ class PollRepository {
       prisma.poll.count({
         where: {
           boardId,
-          status: query.status,
+          status: query.status === 'ALL' ? undefined : query.status,
+          // buildingPermission: {
+          //   hasSome: query.buildingPermission,
+          // },
+          buildingPermission: query.buildingPermission
+            ? { hasSome: query.buildingPermission }
+            : undefined,
           OR: [
             { title: { contains: query.keyword, mode: 'insensitive' } },
             { description: { contains: query.keyword, mode: 'insensitive' } },
