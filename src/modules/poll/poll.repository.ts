@@ -13,16 +13,21 @@ type Poll = Omit<Infer<typeof pollStruct.createPoll>, 'status' | 'startDate' | '
 type OrderBy = 'asc' | 'desc';
 
 class UserRepo {
-  getResident = async (userId: string) => {
-    const resident = await prisma.residentList.findUnique({
+  getUserInfo = async (userId: string) => {
+    const user = await prisma.user.findUnique({
       where: {
-        userId,
+        id: userId,
       },
-      select: {
-        apartmentDong: true,
+      include: {
+        residentLists: {
+          select: {
+            apartmentDong: true,
+          },
+        },
       },
     });
-    return resident;
+
+    return user;
   };
 }
 
@@ -57,48 +62,37 @@ class PollRepository {
   };
 
   getPollList = async (query: any, boardId: string) => {
+    const getPollFilter: any = {
+      boardId,
+      // buildingPermission: {
+      //   hasSome: query.buildingPermission,
+      // },
+      buildingPermission: query.buildingPermission
+        ? { hasSome: query.buildingPermission }
+        : undefined,
+      status: query.status === 'ALL' ? undefined : query.status,
+      deletedAt: null,
+    };
+
+    if (query.keyword) {
+      getPollFilter.OR = [
+        { title: { contains: query.keyword, mode: 'insensitive' } },
+        { description: { contains: query.keyword, mode: 'insensitive' } },
+      ];
+    }
+
     const [pollList, totalCount] = await Promise.all([
       prisma.poll.findMany({
-        where: {
-          boardId,
-          // buildingPermission: {
-          //   hasSome: query.buildingPermission,
-          // },
-          buildingPermission: query.buildingPermission
-            ? { hasSome: query.buildingPermission }
-            : undefined,
-          status: query.status === 'ALL' ? undefined : query.status,
-          OR: [
-            { title: { contains: query.keyword, mode: 'insensitive' } },
-            { description: { contains: query.keyword, mode: 'insensitive' } },
-          ],
-        },
+        where: getPollFilter,
         orderBy: { createdAt: query.orderBy },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         include: {
-          admin: {
-            select: {
-              name: true,
-            },
-          },
+          admin: { select: { name: true } },
         },
       }),
       prisma.poll.count({
-        where: {
-          boardId,
-          status: query.status === 'ALL' ? undefined : query.status,
-          // buildingPermission: {
-          //   hasSome: query.buildingPermission,
-          // },
-          buildingPermission: query.buildingPermission
-            ? { hasSome: query.buildingPermission }
-            : undefined,
-          OR: [
-            { title: { contains: query.keyword, mode: 'insensitive' } },
-            { description: { contains: query.keyword, mode: 'insensitive' } },
-          ],
-        },
+        where: getPollFilter,
       }),
     ]);
 
@@ -106,16 +100,13 @@ class PollRepository {
   };
 
   getPollInfo = async (pollId: string) => {
-    const pollInfo = await prisma.poll.findUnique({
+    const pollInfo = await prisma.poll.findFirst({
       where: {
         id: pollId,
+        deletedAt: null,
       },
       include: {
-        admin: {
-          select: {
-            name: true,
-          },
-        },
+        admin: { select: { name: true } },
         pollOptions: {
           select: {
             id: true,
@@ -127,6 +118,15 @@ class PollRepository {
     });
 
     return pollInfo;
+  };
+
+  deletePoll = async (pollId: string) => {
+    await prisma.poll.update({
+      where: { id: pollId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
   };
 }
 

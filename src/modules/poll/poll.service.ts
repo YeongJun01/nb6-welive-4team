@@ -106,14 +106,14 @@ class PollService {
     const pollStatus = this.dbMappedStatus(query.status);
 
     // 유저 기능 생성 후 추가 작업 진행
-    // const user = await userRepo.getResident(userId);
+    // const user = await userRepo.getUserInfo(userId);
     // if (!user) {
     //   throw new BadRequestError('존재하지 않는 유저입니다.');
     // }
 
     // const buildingPermission = query.buildingPermission
     //   ? query.buildingPermission
-    //   : [user.apartmentDong, 'all'];
+    //   : [user.residentLists.apartmentDong, 'all'];
     // getPollList 객체에 값 전달
 
     const { pollList, totalCount } = await pollRepository.getPollList(
@@ -155,8 +155,27 @@ class PollService {
   };
 
   // 투표 삭제
-  deletePoll = async (data: any) => {
-    console.log('test service poll deletePoll', data);
+  deletePoll = async (pollId: string, boardId: string) => {
+    const pollInfo = await pollRepository.getPollInfo(pollId);
+    if (!pollInfo) {
+      throw new BadRequestError('존재하지 않는 투표입니다.');
+    }
+
+    if (pollInfo.boardId !== boardId) {
+      throw new BadRequestError('접근 권한이 없습니다.');
+    }
+
+    // 유저 기능 생성 후 추가 작업 진행
+    // const user = await userRepo.getUserInfo(userId);
+    // if (!user) {
+    //   throw new BadRequestError('존재하지 않는 유저입니다.');
+    // }
+    //
+    // if (user.role !== "ADMIN") {
+    //   throw new BadRequestError('관리자만 삭제할 수 있습니다.');
+    // }
+
+    await pollRepository.deletePoll(pollId);
   };
 }
 

@@ -39,6 +39,7 @@ class PollController {
   getPollInfo = async (req: Request, res: Response) => {
     const pollId = mask(req.params.pollId, pollStruct.uuid);
     const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
+    // const boardId = req.params.board.pollId;
     const pollInfo = await pollService.getPollInfo(pollId, boardId);
     res.status(200).json(pollInfo);
   };
@@ -51,8 +52,11 @@ class PollController {
 
   // 투표 삭제
   deletePoll = async (req: Request, res: Response) => {
-    console.log('test poll deletePoll');
-    pollService.deletePoll(1);
+    const pollId = mask(req.params.pollId, pollStruct.uuid);
+    const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
+    // const boardId = req.params.board.pollId;
+    pollService.deletePoll(pollId, boardId);
+    res.status(200).json({ message: '정상적으로 삭제 처리되었습니다' });
   };
 }
 
