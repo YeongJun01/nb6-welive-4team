@@ -4,7 +4,7 @@ import pollStruct from './poll.validation';
 
 type DbPollStatus = 'UPCOMING' | 'ONGOING' | 'CLOSED';
 
-type Poll = Omit<Infer<typeof pollStruct.createPoll>, 'status' | 'startDate' | 'endDate'> & {
+type Poll = Omit<Infer<typeof pollStruct.pollInformation>, 'status' | 'startDate' | 'endDate'> & {
   status: DbPollStatus;
   startDate: Date;
   endDate: Date;
@@ -118,6 +118,38 @@ class PollRepository {
     });
 
     return pollInfo;
+  };
+
+  updatePoll = async (data: Poll, adminId: string, pollId: string) => {
+    const { options, content, ...pollData } = data;
+
+    const poll = await prisma.$transaction(async (db) => {
+      const newPoll = await db.poll.update({
+        where: { id: pollId },
+        data: {
+          ...pollData,
+          adminId,
+          description: content,
+        },
+      });
+
+      await db.pollOption.deleteMany({
+        where: {
+          pollId,
+        },
+      });
+
+      await db.pollOption.createMany({
+        data: options.map((option: any) => ({
+          pollId: newPoll.id,
+          content: option.title,
+        })),
+      });
+
+      return newPoll;
+    });
+
+    return poll;
   };
 
   deletePoll = async (pollId: string) => {

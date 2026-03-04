@@ -4,9 +4,25 @@ import BadRequestError from '../../lib/errors/BadRequestError';
 import pollRepository from './poll.repository';
 import { userRepo } from './poll.repository';
 
-type Poll = Infer<typeof pollStruct.createPoll>;
+type Poll = Infer<typeof pollStruct.pollInformation>;
 
 class PollService {
+  private dateCheck = (startDateStr: string, endDateStr: string) => {
+    const today = new Date();
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    if (startDate < today) {
+      throw new BadRequestError('투표 시작일을 재설정 바랍니다.');
+    }
+
+    if (startDate > endDate) {
+      throw new BadRequestError('투표 시작일이 종료일보다 빠를 수 없습니다.');
+    }
+
+    return { startDate, endDate };
+  };
+
   private dbMappedStatus = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -69,17 +85,7 @@ class PollService {
 
     const { options, status, ...pollData } = data;
 
-    const today = new Date();
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
-
-    if (startDate < today) {
-      throw new BadRequestError('투표 시작일을 재설정 바랍니다.');
-    }
-
-    if (startDate > endDate) {
-      throw new BadRequestError('투표 시작일이 종료일보다 빠를 수 없습니다.');
-    }
+    const { startDate, endDate } = this.dateCheck(data.startDate, data.endDate);
 
     if (options.length < 2) {
       throw new BadRequestError('선택지는 2개 이상이어야 합니다.');
@@ -150,8 +156,52 @@ class PollService {
   };
 
   // 투표 수정
-  updatePoll = async (data: any) => {
-    console.log('test service poll updatePoll', data);
+  updatePoll = async (data: Poll, adminId: string, pollId: string) => {
+    const pollInfo = await pollRepository.getPollInfo(pollId);
+
+    if (!pollInfo) {
+      throw new BadRequestError('존재하지 않는 투표입니다.');
+    }
+
+    if (pollInfo.adminId !== adminId) {
+      throw new BadRequestError('수정 권한이 없습니다.');
+    }
+
+    if (pollInfo.status !== 'UPCOMING') {
+      throw new BadRequestError('투표가 진행중이거나 종료되어 수정할 수 없습니다.');
+    }
+
+    // 유저 기능 생성 후 추가 작업 진행
+    // const admin = await userRepo.getUserInfo(userId);
+    // if (!admin) {
+    //   throw new BadRequestError('존재하지 않는 관리자입니다.');
+    // }
+    //
+    // if (admin.role !== "ADMIN") {
+    //   throw new BadRequestError('관리자만 수정할 수 있습니다.');
+    // }
+
+    const { options, status, ...pollData } = data;
+
+    const { startDate, endDate } = this.dateCheck(data.startDate, data.endDate);
+
+    if (options.length < 2) {
+      throw new BadRequestError('선택지는 2개 이상이어야 합니다.');
+    }
+
+    const pollStatus = this.dbMappedStatus(status);
+
+    if (pollStatus === 'ALL') {
+      throw new BadRequestError('상태가 올바르지 않습니다.');
+    }
+
+    const updatePoll = await pollRepository.updatePoll(
+      { ...data, status: pollStatus, startDate, endDate },
+      adminId,
+      pollId,
+    );
+
+    return updatePoll;
   };
 
   // 투표 삭제
@@ -163,6 +213,10 @@ class PollService {
 
     if (pollInfo.boardId !== boardId) {
       throw new BadRequestError('접근 권한이 없습니다.');
+    }
+
+    if (pollInfo.status !== 'UPCOMING') {
+      throw new BadRequestError('투표가 진행중이거나 종료되어 삭제할 수 없습니다.');
     }
 
     // 유저 기능 생성 후 추가 작업 진행

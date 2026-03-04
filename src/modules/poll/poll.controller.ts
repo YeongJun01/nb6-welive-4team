@@ -6,7 +6,7 @@ import pollStruct from './poll.validation';
 class PollController {
   // 투표 생성
   createPoll = async (req: Request, res: Response) => {
-    const data = create(req.body, pollStruct.createPoll);
+    const data = create(req.body, pollStruct.pollInformation);
     const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
     // const adminId = req.user?.id
     const poll = await pollService.createPoll(data, adminId);
@@ -46,8 +46,13 @@ class PollController {
 
   // 투표 수정
   updatePoll = async (req: Request, res: Response) => {
-    console.log('test poll updatePoll');
-    pollService.updatePoll(1);
+    const data = create(req.body, pollStruct.pollInformation);
+    const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
+    // const adminId = req.user?.id
+    const pollId = mask(req.params.pollId, pollStruct.uuid);
+    const poll = await pollService.updatePoll(data, adminId, pollId);
+
+    res.status(201).json({ message: '정상적으로 수정 처리되었습니다' });
   };
 
   // 투표 삭제

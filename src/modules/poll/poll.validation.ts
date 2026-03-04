@@ -10,7 +10,7 @@ const userInfo = s.object({
   }),
 });
 
-const createPoll = s.object({
+const pollInformation = s.object({
   boardId: uuid,
   status: s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED']),
   buildingPermission: s.array(s.string()),
@@ -36,7 +36,7 @@ const getPollId = s.object({
 
 export default {
   uuid,
-  createPoll,
+  pollInformation,
   getPollList,
   getPollId,
 };
