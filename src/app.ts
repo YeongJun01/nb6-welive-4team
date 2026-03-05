@@ -7,6 +7,7 @@ import { defaultNotFoundHandler, errorHandler } from './middlewares/errorHandler
 import authRouter from './modules/auth/auth.router';
 import userRouter from './modules/user/user.router';
 import pollRouter from './modules/poll/poll.router';
+import voteRouter from './modules/vote/vote.router';
 
 const app = express();
 
@@ -18,7 +19,8 @@ app.use(cors());
 // 라우터 설정
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
-app.use('/polls', pollRouter);
+app.use('/polls', pollRouter); // 투표 게시판
+app.use('/options', voteRouter); // 투표 옵션
 
 //404 처리 미들웨어 및 에러 핸들러 등록
 app.use(defaultNotFoundHandler);
