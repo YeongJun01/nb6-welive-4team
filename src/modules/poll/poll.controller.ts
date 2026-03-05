@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pollService from './poll.service';
 import { create, mask } from 'superstruct';
 import pollStruct from './poll.validation';
+import commonStruct from '../../structs/common.validation';
 
 class PollController {
   // 투표 생성
@@ -37,7 +38,7 @@ class PollController {
 
   // 투표 상세 조회
   getPollInfo = async (req: Request, res: Response) => {
-    const pollId = mask(req.params.pollId, pollStruct.uuid);
+    const pollId = mask(req.params.pollId, commonStruct.uuid);
     const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
     // const boardId = req.params.board.pollId;
     const pollInfo = await pollService.getPollInfo(pollId, boardId);
@@ -49,7 +50,7 @@ class PollController {
     const data = create(req.body, pollStruct.pollInformation);
     const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
     // const adminId = req.user?.id
-    const pollId = mask(req.params.pollId, pollStruct.uuid);
+    const pollId = mask(req.params.pollId, commonStruct.uuid);
     const poll = await pollService.updatePoll(data, adminId, pollId);
 
     res.status(201).json({ message: '정상적으로 수정 처리되었습니다' });
@@ -57,7 +58,7 @@ class PollController {
 
   // 투표 삭제
   deletePoll = async (req: Request, res: Response) => {
-    const pollId = mask(req.params.pollId, pollStruct.uuid);
+    const pollId = mask(req.params.pollId, commonStruct.uuid);
     const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
     // const boardId = req.params.board.pollId;
     pollService.deletePoll(pollId, boardId);

@@ -1,17 +1,15 @@
-import isUuid from 'is-uuid';
 import * as s from 'superstruct';
-
-const uuid = s.define<string>('uuid', (value: any) => isUuid.v4(value));
+import commonStruct from '../../structs/common.validation';
 
 const userInfo = s.object({
-  id: uuid,
+  id: commonStruct.uuid,
   boardIds: s.object({
-    POLL: uuid,
+    POLL: commonStruct.uuid,
   }),
 });
 
 const pollInformation = s.object({
-  boardId: uuid,
+  boardId: commonStruct.uuid,
   status: s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED']),
   buildingPermission: s.array(s.string()),
   title: s.string(),
@@ -31,11 +29,10 @@ const getPollList = s.object({
 });
 
 const getPollId = s.object({
-  pollId: uuid,
+  pollId: commonStruct.uuid,
 });
 
 export default {
-  uuid,
   pollInformation,
   getPollList,
   getPollId,
