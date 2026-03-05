@@ -21,6 +21,7 @@ class UserRepo {
       include: {
         residentLists: {
           select: {
+            apartmentId: true,
             apartmentDong: true,
           },
         },
