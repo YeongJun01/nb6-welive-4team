@@ -111,7 +111,7 @@ class PollService {
     const orderBy = query.orderBy === 'oldest' ? 'asc' : 'desc';
     const pollStatus = this.dbMappedStatus(query.status);
 
-    // 유저 기능 생성 후 추가 작업 진행
+    // 유저 기능 + viewcount 기능 추가 작업 진행
     // const user = await userRepo.getUserInfo(userId);
     // if (!user) {
     //   throw new BadRequestError('존재하지 않는 유저입니다.');

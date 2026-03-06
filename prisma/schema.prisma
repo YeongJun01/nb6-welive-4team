@@ -120,6 +120,10 @@ model Board {
   apartmentId String // FA
   boardType   BoardType
 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete
+
   admin     User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
   apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 
@@ -163,6 +167,7 @@ model Poll {
   startDate          DateTime
   endDate            DateTime
   status             PollStatus
+  viewCount          Int        @default(0)
   //pollResult         String? // pollOptions의 content와 voteCount로 계산
 
   createdAt DateTime  @default(now())
@@ -180,7 +185,7 @@ model PollOption {
   id        String   @id @default(uuid())
   pollId    String // FK
   content   String // 각 선택지
-  voteCount Int?
+  voteCount Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -194,7 +199,7 @@ model Vote {
   optionId  String // FK 선택지
   userId    String // FK 선택한 사람
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // updatedAt DateTime @updatedAt
 
   poll    Poll       @relation(fields: [pollId], references: [id])
   options PollOption @relation(fields: [optionId], references: [id])
