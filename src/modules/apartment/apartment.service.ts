@@ -1,0 +1,192 @@
+import { Apartment } from '@prisma/client';
+import apartmentRepository from './apartment.repository';
+import {
+  ApartmentListPublicDto,
+  ApartmentListResponseDto,
+  CreateApartmentDto,
+  ApartmentResponseWithRangeDto,
+  ApartmentResponseWithRangePublicDto,
+} from './apartment.dto';
+
+class ApartmentService {
+  // [Q1] 입주자/비로그인 유저용 아파트 목록 조회 (공개 정보만)
+  async getApartmentsForPublic(params?: {
+    keyword?: string;
+    name?: string;
+    address?: string;
+  }): Promise<ApartmentListPublicDto> {
+    // 1. 레포지토리에서 전체 아파트 목록을 가져옵니다.
+    const apartments = await apartmentRepository.getApartments(params);
+
+    // 2. 가져온 데이터를 ApartmentPublicDto 형태로 변환(Mapping)합니다.
+    const publicApartments = apartments.map((apt) => {
+      return {
+        id: apt.id,
+        name: apt.name,
+        address: apt.address,
+      };
+    });
+
+    // 3. 결과 반환
+    return {
+      apartments: publicApartments,
+      totalCount: publicApartments.length,
+    };
+  }
+
+  // 슈퍼관리자용: 모든 아파트 목록 조회
+  async getAllApartmentsForSuperAdmin(params?: {
+    keyword?: string;
+    name?: string;
+    address?: string;
+  }): Promise<ApartmentListResponseDto> {
+    const apartments = await apartmentRepository.getApartments(params);
+
+    const adminApartments = apartments.map((apt) => {
+      return {
+        id: apt.id,
+        name: apt.name,
+        address: apt.address,
+        officeNumber: apt.officeNumber,
+        description: apt.description,
+        startComplexNumber: apt.startComplexNumber,
+        startBuildingNumber: apt.startBuildingNumber,
+        startFloorNumber: apt.startFloorNumber,
+        startUnitNumber: apt.startUnitNumber,
+        endComplexNumber: apt.endComplexNumber,
+        endBuildingNumber: apt.endBuildingNumber,
+        endFloorNumber: apt.endFloorNumber,
+        endUnitNumber: apt.endUnitNumber,
+        apartmentStatus: apt.apartmentStatus,
+        adminId: apt.users[0].id,
+        adminName: apt.users[0].name,
+        adminContact: apt.users[0].contact,
+        adminEmail: apt.users[0].email,
+      };
+    });
+
+    return {
+      apartments: adminApartments,
+      totalCount: adminApartments.length,
+    };
+  }
+
+  // 일반 관리자용: 자신이 속한 아파트 1개 조회
+  async getApartmentForAdmin(
+    adminId: string,
+    params?: { keyword?: string; name?: string; address?: string },
+  ): Promise<ApartmentListResponseDto> {
+    // 1. 레포지토리에서 관리자 ID로 아파트를 조회합니다.
+    const apt = await apartmentRepository.getApartmentByAdminId(adminId, params);
+
+    // 2. 아파트가 존재하지 않으면 빈 목록을 반환합니다.
+    if (!apt) {
+      return { apartments: [], totalCount: 0 };
+    }
+
+    // 3. 조회된 아파트 정보를 DTO에 맞게 매핑합니다.
+    const managedApartment = {
+      id: apt.id,
+      name: apt.name,
+      address: apt.address,
+      officeNumber: apt.officeNumber,
+      description: apt.description,
+      startComplexNumber: apt.startComplexNumber,
+      startBuildingNumber: apt.startBuildingNumber,
+      startFloorNumber: apt.startFloorNumber,
+      startUnitNumber: apt.startUnitNumber,
+      endComplexNumber: apt.endComplexNumber,
+      endBuildingNumber: apt.endBuildingNumber,
+      endFloorNumber: apt.endFloorNumber,
+      endUnitNumber: apt.endUnitNumber,
+      apartmentStatus: apt.apartmentStatus,
+      adminId: apt.users[0].id,
+      adminName: apt.users[0].name,
+      adminContact: apt.users[0].contact,
+      adminEmail: apt.users[0].email,
+    };
+
+    return { apartments: [managedApartment], totalCount: 1 };
+  }
+
+  // 아파트 상세 조회 (공개 정보)
+  async getApartmentByIdForPublic(id: string): Promise<ApartmentResponseWithRangePublicDto | null> {
+    if (!id) {
+      return null;
+    }
+
+    const apartment = await apartmentRepository.getApartmentById(id);
+
+    if (!apartment) {
+      return null;
+    }
+
+    return {
+      id: apartment.id,
+      name: apartment.name,
+      address: apartment.address,
+      description: apartment.description,
+      startComplexNumber: apartment.startComplexNumber,
+      startBuildingNumber: apartment.startBuildingNumber,
+      startFloorNumber: apartment.startFloorNumber,
+      startUnitNumber: apartment.startUnitNumber,
+      endComplexNumber: apartment.endComplexNumber,
+      endBuildingNumber: apartment.endBuildingNumber,
+      endFloorNumber: apartment.endFloorNumber,
+      endUnitNumber: apartment.endUnitNumber,
+      dongRange: {
+        start: `${String(apartment.startComplexNumber)}${String(apartment.startBuildingNumber).padStart(2, '0')}`,
+        end: `${String(apartment.endComplexNumber)}${String(apartment.endBuildingNumber).padStart(2, '0')}`,
+      },
+      hoRange: {
+        start: `${String(apartment.startFloorNumber)}${String(apartment.startUnitNumber).padStart(2, '0')}`,
+        end: `${String(apartment.endFloorNumber)}${String(apartment.endUnitNumber).padStart(2, '0')}`,
+      },
+    };
+  }
+
+  // 아파트 상세 조회 (관리자 정보 포함)
+  async getApartmentByIdForAdmin(id: string): Promise<ApartmentResponseWithRangeDto | null> {
+    const apartment = await apartmentRepository.getApartmentById(id);
+
+    if (!apartment) {
+      return null;
+    }
+
+    return {
+      id: apartment.id,
+      name: apartment.name,
+      address: apartment.address,
+      officeNumber: apartment.officeNumber,
+      description: apartment.description,
+      startComplexNumber: apartment.startComplexNumber,
+      startBuildingNumber: apartment.startBuildingNumber,
+      startFloorNumber: apartment.startFloorNumber,
+      startUnitNumber: apartment.startUnitNumber,
+      endComplexNumber: apartment.endComplexNumber,
+      endBuildingNumber: apartment.endBuildingNumber,
+      endFloorNumber: apartment.endFloorNumber,
+      endUnitNumber: apartment.endUnitNumber,
+      apartmentStatus: apartment.apartmentStatus,
+      adminId: apartment.users[0].id,
+      adminName: apartment.users[0].name,
+      adminContact: apartment.users[0].contact,
+      adminEmail: apartment.users[0].email,
+      dongRange: {
+        start: `${String(apartment.startComplexNumber)}${String(apartment.startBuildingNumber).padStart(2, '0')}`,
+        end: `${String(apartment.endComplexNumber)}${String(apartment.endBuildingNumber).padStart(2, '0')}`,
+      },
+      hoRange: {
+        start: `${String(apartment.startFloorNumber)}${String(apartment.startUnitNumber).padStart(2, '0')}`,
+        end: `${String(apartment.endFloorNumber)}${String(apartment.endUnitNumber).padStart(2, '0')}`,
+      },
+    };
+  }
+
+  // 아파트 생성 (이건 Role 구분 없이 공통 로직일 가능성이 높음)
+  async createApartment(data: CreateApartmentDto) {
+    return await apartmentRepository.createApartment(data);
+  }
+}
+
+export default new ApartmentService();
