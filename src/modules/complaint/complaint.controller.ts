@@ -22,9 +22,14 @@ class ComplaintController {
   };
 
   getComplaintDetail = async (req: Request, res: Response) => {
-    console.log('test complaint controller detail');
+    const complaintId = mask(req.params.complaintId, commonStruct.uuid);
 
-    await complaintService.getComplaintDetail(1);
+    // 조회 하려는 사람의 id
+    const userId = '022b5089-5d24-40aa-b2dc-4477e0d0add0'; // user4 정보, 업데이트 필요
+    // const userId = req.user?.id;
+    const complaintDetail = await complaintService.getComplaintDetail(complaintId, userId);
+
+    res.status(200).json(complaintDetail);
   };
 
   updateComplaint = async (req: Request, res: Response) => {

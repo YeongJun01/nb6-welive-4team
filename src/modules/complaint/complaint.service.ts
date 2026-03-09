@@ -1,9 +1,42 @@
 import { Request, Response } from 'express';
 import complaintRepository, { userRepo, boardRepo } from './complaint.repository';
 import BadRequestError from '../../lib/errors/BadRequestError';
+import { Infer } from 'superstruct';
+import complaintStruct from './complaint.validation';
+
+type Complaint = Infer<typeof complaintStruct.complaintInformation>;
 
 class ComplaintService {
-  createComplaint = async (data: any, createId: string) => {
+  private mapComplaintDetail = (complaint: any) => {
+    return {
+      complaintId: complaint.id,
+      userId: complaint.creatorId,
+      title: complaint.title,
+      writerName: complaint.creator?.name,
+      createdAt: complaint.createdAt,
+      updatedAt: complaint.updatedAt,
+      isPublic: complaint.isPublic,
+      viewCount: complaint.viewCount,
+      commentsCount: complaint.comments.length,
+      status: complaint.status,
+      dong: complaint.creator?.residentLists.apartmentDong,
+      ho: complaint.creator?.residentLists.apartmentHo,
+      content: complaint.content,
+      boardType: 'COMPLAINT',
+      comments: [
+        complaint.comments.map((comment: any) => ({
+          id: comment.id,
+          userId: comment.creatorId,
+          content: comment.content,
+          createdAt: comment.createdAt,
+          updatedAt: comment.updatedAt,
+          writerName: comment.creator?.name,
+        })),
+      ],
+    };
+  };
+
+  createComplaint = async (data: Complaint, createId: string) => {
     const user = await userRepo.getUserInfo(createId);
 
     if (!user) {
@@ -35,8 +68,27 @@ class ComplaintService {
     console.log('test complaint list', data);
   };
 
-  getComplaintDetail = async (data: any) => {
-    console.log('test complaint detail', data);
+  getComplaintDetail = async (complaintId: string, userId: string) => {
+    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const user = await userRepo.getUserInfo(userId);
+
+    if (!complaint) {
+      throw new BadRequestError('존재하지 않는 민원입니다.');
+    }
+
+    if (!user) {
+      throw new BadRequestError('존재하지 않는 사용자입니다.');
+    }
+
+    if (
+      complaint.isPublic === false &&
+      (complaint.creatorId !== userId || complaint.adminId !== userId)
+    ) {
+      throw new BadRequestError('민원 조회 권한이 없습니다.');
+    }
+
+    const complaintDetail = this.mapComplaintDetail(complaint);
+    return complaintDetail;
   };
 
   updateComplaint = async (data: any) => {

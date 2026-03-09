@@ -41,6 +41,30 @@ class ComplaintRepository {
       },
     });
   };
+
+  getComplaintDetail = async (complaintId: string) => {
+    const complaint = await prisma.complaint.findUnique({
+      where: {
+        id: complaintId,
+      },
+      include: {
+        comments: true,
+        creator: {
+          select: {
+            name: true,
+            residentLists: {
+              select: {
+                apartmentDong: true,
+                apartmentHo: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return complaint;
+  };
 }
 
 const complaintRepository = new ComplaintRepository();
