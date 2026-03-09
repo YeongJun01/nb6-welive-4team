@@ -5,6 +5,8 @@ import { PORT } from './lib/constants';
 import cookieParser from 'cookie-parser';
 import apartmentRouter from './modules/apartment/apartment.router';
 import { defaultNotFoundHandler, errorHandler } from './middlewares/errorHandler';
+import authRouter from './modules/auth/auth.router';
+import userRouter from './modules/user/user.router';
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.get('/', (req, res) => {
 });
 
 // 라우터 설정
+app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
 
 // 아파트 관련 라우터
 app.use('/apartments', apartmentRouter);
@@ -26,7 +30,4 @@ app.use('/apartments', apartmentRouter);
 app.use(defaultNotFoundHandler);
 app.use(errorHandler);
 
-//서버 시작
-app.listen(PORT, () => {
-  console.log(`team4 Server is running on port ${PORT}`);
-});
+export default app;

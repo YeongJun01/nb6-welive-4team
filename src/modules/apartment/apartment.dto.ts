@@ -1,4 +1,4 @@
-import { Apartment } from '@prisma/client';
+import { Apartment, User } from '@prisma/client';
 
 // 아파트 DTO
 export type ApartmentDto = Omit<Apartment, 'createdAt' | 'updatedAt' | 'deletedAt'>;
@@ -10,9 +10,9 @@ export type CreateApartmentDto = Omit<
 > & {};
 // 아파트 출력값 (입주자, 비로그인)
 export type ApartmentPublicDto = {
-  id: string; // 아파트 고유 ID (uuid)
-  name: string; // 아파트 이름
-  address: string; // 아파트 주소
+  id: Apartment['id']; // 아파트 고유 ID (uuid)
+  name: Apartment['name']; // 아파트 이름
+  address: Apartment['address']; // 아파트 주소
 };
 
 // 아파트 목록 출력값 (입주자, 비로그인)
@@ -22,10 +22,10 @@ export type ApartmentListPublicDto = {
 };
 
 export type ApartmentResponseDto = Omit<Apartment, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
-  adminId: string; // 아파트 관리자 ID
-  adminName: string; // 아파트 관리자 이름
-  adminContact: string; // 아파트 관리자 연락처
-  adminEmail: string; // 아파트 관리자 이메일
+  adminId: User['id']; // 아파트 관리자 ID
+  adminName: User['name']; // 아파트 관리자 이름
+  adminContact: User['contact']; // 아파트 관리자 연락처
+  adminEmail: User['email']; // 아파트 관리자 이메일
 };
 
 export type ApartmentListResponseDto = {

@@ -1,5 +1,5 @@
 // src/modules/apartment/apartment.controller.ts
-
+import prisma from '../../lib/prisma';
 import { Request, Response, NextFunction } from 'express';
 import apartmentService from './apartment.service';
 import NotFoundError from '../../lib/errors/NotFoundError';
@@ -18,7 +18,16 @@ class ApartmentController {
     }
     // 인증 미들웨어가 붙으면 req.user에 로그인한 유저 정보가 담깁니다.
     // 현재는 타입 오류를 방지하기 위해 any로 단언하거나, 가상의 유저를 사용한다고 가정합니다.
-    const user = (req as any).user;
+    const userId = req.user!.id;
+
+    // DB에서 유저 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError('유저를 찾을 수 없습니다.');
+    }
     const role = user?.role;
 
     let result;
@@ -50,7 +59,16 @@ class ApartmentController {
   async getApartmentById(req: Request, res: Response) {
     const { id } = req.params as { id: string }; // URL 파라미터에서 아파트 ID 추출
 
-    const user = (req as any).user;
+    const userId = req.user!.id;
+
+    // DB에서 유저 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError('유저를 찾을 수 없습니다.');
+    }
     const role = user?.role;
 
     let result;

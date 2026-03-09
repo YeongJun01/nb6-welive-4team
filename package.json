@@ -7,8 +7,8 @@
   "main": "main.js",
   "scripts": {
     "build": "clear; tsc",
-    "start": "node dist/app.js",
-    "dev": "clear; nodemon --watch 'src/**/*.ts' --exec ts-node -r tsconfig-paths/register src/app.ts",
+    "start": "node dist/main.js",
+    "dev": "clear; nodemon --watch 'src/**/*.ts' --exec ts-node -r tsconfig-paths/register src/main.ts",
     "test": "jest"
   },
   "prisma": {
