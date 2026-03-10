@@ -7,7 +7,7 @@ import complaintStruct from './complaint.validation';
 type Complaint = Infer<typeof complaintStruct.complaintInformation>;
 
 class ComplaintService {
-  private mapComplaintDetail = (complaint: any) => {
+  private mapComplaintList = (complaint: any) => {
     return {
       complaintId: complaint.id,
       userId: complaint.creatorId,
@@ -17,10 +17,15 @@ class ComplaintService {
       updatedAt: complaint.updatedAt,
       isPublic: complaint.isPublic,
       viewCount: complaint.viewCount,
-      commentsCount: complaint.comments.length,
+      commentsCount: complaint._count?.comments,
       status: complaint.status,
-      dong: complaint.creator?.residentLists.apartmentDong,
-      ho: complaint.creator?.residentLists.apartmentHo,
+      dong: complaint.apartmentDong,
+      ho: complaint.apartmentHo,
+    };
+  };
+  private mapComplaintDetail = (complaint: any) => {
+    return {
+      ...this.mapComplaintList(complaint),
       content: complaint.content,
       boardType: 'COMPLAINT',
       comments: [
@@ -59,13 +64,57 @@ class ComplaintService {
       throw new BadRequestError('민원 게시판이 아닙니다.');
     }
 
-    const complaint = await complaintRepository.createComplaint(data, user.id, board.adminId);
+    const userInfo = {
+      creatorId: user.id,
+      apartmentDong: user.residentLists?.apartmentDong,
+      apartmentHo: user.residentLists?.apartmentHo,
+    };
+
+    const complaint = await complaintRepository.createComplaint(data, userInfo, board.adminId);
 
     return complaint;
   };
 
-  getComplaintList = async (data: any) => {
-    console.log('test complaint list', data);
+  getComplaintList = async (query: any, boardId: string, userId: string) => {
+    // 임의로 정렬 추가
+    const orderBy = query.orderBy === 'oldest' ? 'asc' : 'desc';
+
+    // 1. 유저 정보 확인
+    const user = await userRepo.getUserInfo(userId);
+
+    if (!user) {
+      throw new BadRequestError('존재하지 않는 사용자입니다.');
+    }
+
+    if (user.role === 'SUPER_ADMIN') {
+      throw new BadRequestError('민원 조회 권한이 없습니다.');
+    }
+
+    // 2. isPublic에 따른 민원 리스트 조회
+    let originComplaintList;
+    if (query.isPublic !== true && user.role === 'USER') {
+      // 2-1. 비공개 민원 & 입주민 조회
+      originComplaintList = await complaintRepository.getComplaintList(
+        { ...query, orderBy },
+        boardId,
+        user.id,
+      );
+    } else {
+      // 2-2. 공개 민원 || 비공개 + 관리자 조회
+      originComplaintList = await complaintRepository.getComplaintList(
+        { ...query, orderBy },
+        boardId,
+      );
+
+      // 유저 인증 기능 추가 후 세부 분류 진행
+    }
+
+    return {
+      complaints: originComplaintList.complaintList.map((complaint: any) =>
+        this.mapComplaintList(complaint),
+      ),
+      totalCount: originComplaintList.totalCount,
+    };
   };
 
   getComplaintDetail = async (complaintId: string, userId: string) => {

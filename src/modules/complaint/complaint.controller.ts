@@ -7,7 +7,7 @@ import commonStruct from '../../structs/common.validation';
 class ComplaintController {
   createComplaint = async (req: Request, res: Response) => {
     const data = create(req.body, complaintStruct.complaintInformation);
-    const createId = '022b5089-5d24-40aa-b2dc-4477e0d0add0'; // user4 정보, 업데이트 필요
+    const createId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
     // const createId = req.user?.id
 
     const complaint = await complaintService.createComplaint(data, createId);
@@ -16,16 +16,21 @@ class ComplaintController {
   };
 
   getComplaintList = async (req: Request, res: Response) => {
-    console.log('test complaint controller list');
+    const query = mask(req.query, complaintStruct.getComplaintList);
+    const userId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
+    // const createId = req.user?.id
+    const boardId = '2fa86d76-403b-4b8d-8c79-ab2b44113a39'; // 임시 정보 전달
 
-    await complaintService.getComplaintList(1);
+    const complaintList = await complaintService.getComplaintList(query, boardId, userId);
+
+    res.status(200).json(complaintList);
   };
 
   getComplaintDetail = async (req: Request, res: Response) => {
     const complaintId = mask(req.params.complaintId, commonStruct.uuid);
 
     // 조회 하려는 사람의 id
-    const userId = '022b5089-5d24-40aa-b2dc-4477e0d0add0'; // user4 정보, 업데이트 필요
+    const userId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
     // const userId = req.user?.id;
     const complaintDetail = await complaintService.getComplaintDetail(complaintId, userId);
 

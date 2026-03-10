@@ -140,14 +140,17 @@ model Complaint {
   creatorId String // FK
   adminId   String // FK
 
-  title     String
-  content   String
-  isPublic  Boolean         @default(true)
-  status    ComplaintStatus @default(PENDING)
-  viewCount Int             @default(0)
+  title         String
+  content       String
+  isPublic      Boolean         @default(true)
+  apartmentDong String // dong
+  apartmentHo   String // ho
+  status        ComplaintStatus @default(PENDING)
+  viewCount     Int             @default(0)
   // commentCount Int // comments.length
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime? // soft delete
 
   creator  User               @relation(name: "User2Creator", fields: [creatorId], references: [id])

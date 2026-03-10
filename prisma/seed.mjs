@@ -276,7 +276,8 @@ async function main() {
   const complaintStatuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'];
 
   // 각 아파트마다 5개의 민원 생성
-  createdUsers.forEach((user) => {
+  createdUsers.forEach((user, index) => {
+    const userAptInfo = userAptInfosData[index];
     const complaintCount = 3;
     for (let i = 0; i < complaintCount; i++) {
       complaintsData.push({
@@ -288,6 +289,8 @@ async function main() {
         title: `민원 ${i + 1}`,
         content: faker.helpers.arrayElement(complaintContents), // 민원 내용 배열에서 랜덤 선택
         isPublic: faker.datatype.boolean(), // 민원 공개 여부 랜덤 설정
+        apartmentDong: userAptInfo.apartmentDong, // 동
+        apartmentHo: userAptInfo.apartmentHo, // 호
         status: faker.helpers.arrayElement(complaintStatuses), // 민원 처리 상태 후보 배열에서 랜덤 선택
         viewCount: faker.number.int({ min: 0, max: 100 }), // 조회수 랜덤 설정
       });
