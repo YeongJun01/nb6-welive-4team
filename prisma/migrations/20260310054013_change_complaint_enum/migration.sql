@@ -2,31 +2,22 @@
 CREATE TYPE "UserType" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'USER');
 
 -- CreateEnum
-CREATE TYPE "JoinStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'NEED_UPDATE', 'MOVED_OUT');
+CREATE TYPE "Status" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'NEED_UPDATE', 'MOVED_OUT');
 
 -- CreateEnum
-CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
-
--- CreateEnum
-CREATE TYPE "ResidenceStatus" AS ENUM ('RESIDENCE', 'NO_RESIDENCE');
-
--- CreateEnum
-CREATE TYPE "HouseholdRole" AS ENUM ('HOUSEHOLDER', 'MEMBER');
-
--- CreateEnum
-CREATE TYPE "ComplaintStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'REJECTED');
+CREATE TYPE "ComplaintStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "PollStatus" AS ENUM ('UPCOMING', 'ONGOING', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "NoticeType" AS ENUM ('MAINTENANCE', 'URGENT', 'COMMUNITY', 'POLL', 'COMPLAINT', 'GENERAL');
+CREATE TYPE "NoticeType" AS ENUM ('MAINTENANCE', 'EMERGENCY', 'COMMUNITY', 'RESIDENT_VOTE', 'RESIDENT_COUNCIL', 'ETC');
 
 -- CreateEnum
 CREATE TYPE "BoardType" AS ENUM ('NOTICE', 'POLL', 'COMPLAINT');
 
 -- CreateEnum
-CREATE TYPE "NotificationType" AS ENUM ('NOTICE', 'COMPLAINT_RAISED', 'COMPLAINT_RESOLVED', 'POLL_START', 'POLL_END');
+CREATE TYPE "NotificationType" AS ENUM ('NOTICE', 'COMPLAINT_RAISED', 'COMPLAINT_RESOLVED', 'POLL_START', 'POLL_END', 'SIGNUP_REQ');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -38,10 +29,8 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "avatar" TEXT,
     "role" "UserType" NOT NULL DEFAULT 'USER',
-    "joinStatus" "JoinStatus" NOT NULL DEFAULT 'PENDING',
-    "isRegistered" BOOLEAN NOT NULL DEFAULT false,
+    "joinStatus" "Status" NOT NULL DEFAULT 'PENDING',
     "apartmentId" TEXT,
-    "residentListId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -50,31 +39,17 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "UserAptInfo" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "apartmentName" TEXT NOT NULL,
-    "apartmentDong" TEXT NOT NULL,
-    "apartmentHo" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "deletedAt" TIMESTAMP(3),
-
-    CONSTRAINT "UserAptInfo_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "ResidentList" (
     "id" TEXT NOT NULL,
+    "userId" TEXT,
     "apartmentId" TEXT NOT NULL,
     "apartmentDong" TEXT NOT NULL,
     "apartmentHo" TEXT NOT NULL,
     "contact" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "houseRole" "HouseholdRole" NOT NULL DEFAULT 'HOUSEHOLDER',
-    "residenceStatus" "ResidenceStatus" NOT NULL DEFAULT 'RESIDENCE',
+    "isHouseholder" BOOLEAN NOT NULL DEFAULT true,
     "isRegistered" BOOLEAN NOT NULL DEFAULT true,
-    "approvalStatus" "ApprovalStatus" NOT NULL DEFAULT 'PENDING',
+    "approvalStatus" "Status" NOT NULL DEFAULT 'PENDING',
     "email" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -98,7 +73,7 @@ CREATE TABLE "Apartment" (
     "endBuildingNumber" INTEGER NOT NULL,
     "endFloorNumber" INTEGER NOT NULL,
     "endUnitNumber" INTEGER NOT NULL,
-    "apartmentStatus" "ApprovalStatus" NOT NULL DEFAULT 'PENDING',
+    "apartmentStatus" "Status" NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -112,6 +87,9 @@ CREATE TABLE "Board" (
     "adminId" TEXT NOT NULL,
     "apartmentId" TEXT NOT NULL,
     "boardType" "BoardType" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "Board_pkey" PRIMARY KEY ("id")
 );
@@ -125,6 +103,8 @@ CREATE TABLE "Complaint" (
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "isPublic" BOOLEAN NOT NULL DEFAULT true,
+    "apartmentDong" TEXT NOT NULL,
+    "apartmentHo" TEXT NOT NULL,
     "status" "ComplaintStatus" NOT NULL DEFAULT 'PENDING',
     "viewCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -145,7 +125,7 @@ CREATE TABLE "Poll" (
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3) NOT NULL,
     "status" "PollStatus" NOT NULL,
-    "pollResult" TEXT,
+    "viewCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -158,7 +138,7 @@ CREATE TABLE "PollOption" (
     "id" TEXT NOT NULL,
     "pollId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "voteCount" INTEGER,
+    "voteCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -172,7 +152,6 @@ CREATE TABLE "Vote" (
     "optionId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Vote_pkey" PRIMARY KEY ("id")
 );
@@ -255,13 +234,7 @@ CREATE UNIQUE INDEX "User_contact_key" ON "User"("contact");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_residentListId_key" ON "User"("residentListId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "UserAptInfo_userId_key" ON "UserAptInfo"("userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ResidentList_contact_key" ON "ResidentList"("contact");
+CREATE UNIQUE INDEX "ResidentList_userId_key" ON "ResidentList"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Apartment_officeNumber_key" ON "Apartment"("officeNumber");
@@ -279,10 +252,7 @@ CREATE UNIQUE INDEX "Vote_pollId_userId_key" ON "Vote"("pollId", "userId");
 ALTER TABLE "User" ADD CONSTRAINT "User_apartmentId_fkey" FOREIGN KEY ("apartmentId") REFERENCES "Apartment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_residentListId_fkey" FOREIGN KEY ("residentListId") REFERENCES "ResidentList"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserAptInfo" ADD CONSTRAINT "UserAptInfo_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ResidentList" ADD CONSTRAINT "ResidentList_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ResidentList" ADD CONSTRAINT "ResidentList_apartmentId_fkey" FOREIGN KEY ("apartmentId") REFERENCES "Apartment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
