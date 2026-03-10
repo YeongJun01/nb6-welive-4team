@@ -17,19 +17,9 @@ class PollController {
 
   // 투표 목록 조회
   getPollList = async (req: Request, res: Response) => {
-    const parsedQuery = {
-      ...req.query,
-      page: req.query.page ? Number(req.query.page) : undefined,
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
-      buildingPermission: req.query.buildingPermission
-        ? Array.isArray(req.query.buildingPermission)
-          ? req.query.buildingPermission
-          : [req.query.buildingPermission]
-        : undefined,
-    };
-    const query = mask(parsedQuery, pollStruct.getPollList);
+    const query = mask(req.query, pollStruct.getPollList);
     const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
-    // const boardId = req.params.board.pollId;
+    // const boardId = req.user?.board.pollId;
     const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
     // const adminId = req.user?.id
     const pollList = await pollService.getPollList(query, boardId, adminId);

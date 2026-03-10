@@ -19,14 +19,14 @@ const pollInformation = s.object({
   options: s.array(s.object({ title: s.string() })),
 });
 
-const getPollList = s.object({
-  page: s.defaulted(s.number(), 1),
-  limit: s.defaulted(s.number(), 11),
-  buildingPermission: s.optional(s.array(s.string())), // 투표권한 프론트 수정 필요
-  status: s.defaulted(s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED', 'ALL']), 'ALL'),
-  keyword: s.defaulted(s.string(), ''),
-  orderBy: s.defaulted(s.enums(['oldest', 'newest']), 'newest'),
-});
+const getPollList = s.assign(
+  // 기본 조회 설정 : page, limit, keyword, orderBy
+  commonStruct.pagination,
+  s.object({
+    buildingPermission: s.optional(commonStruct.stringArray),
+    status: s.defaulted(s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED', 'ALL']), 'ALL'),
+  }),
+);
 
 const getPollId = s.object({
   pollId: commonStruct.uuid,
