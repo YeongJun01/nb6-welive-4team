@@ -134,8 +134,8 @@ class PollService {
   };
 
   // 투표 상세 조회
-  getPollInfo = async (pollId: string, boardId: string) => {
-    const pollInfo = await pollRepository.getPollInfo(pollId);
+  getPollDetail = async (pollId: string, boardId: string) => {
+    const pollInfo = await pollRepository.getPollDetail(pollId);
     if (!pollInfo) {
       throw new BadRequestError('존재하지 않는 투표입니다.');
     }
@@ -152,12 +152,14 @@ class PollService {
     //   throw new BadRequestError('접근 권한이 없습니다.');
     // }
 
-    return this.mapPollInfo(pollInfo);
+    const pollDetail = await pollRepository.getPollAndUpdateViewCount(pollId);
+
+    return this.mapPollInfo(pollDetail);
   };
 
   // 투표 수정
   updatePoll = async (data: Poll, adminId: string, pollId: string) => {
-    const pollInfo = await pollRepository.getPollInfo(pollId);
+    const pollInfo = await pollRepository.getPollDetail(pollId);
 
     if (!pollInfo) {
       throw new BadRequestError('존재하지 않는 투표입니다.');
@@ -206,7 +208,7 @@ class PollService {
 
   // 투표 삭제
   deletePoll = async (pollId: string, boardId: string) => {
-    const pollInfo = await pollRepository.getPollInfo(pollId);
+    const pollInfo = await pollRepository.getPollDetail(pollId);
     if (!pollInfo) {
       throw new BadRequestError('존재하지 않는 투표입니다.');
     }

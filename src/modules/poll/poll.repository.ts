@@ -100,8 +100,8 @@ class PollRepository {
     return { pollList, totalCount };
   };
 
-  getPollInfo = async (pollId: string) => {
-    const pollInfo = await prisma.poll.findFirst({
+  getPollDetail = async (pollId: string) => {
+    return await prisma.poll.findFirst({
       where: {
         id: pollId,
         deletedAt: null,
@@ -117,8 +117,23 @@ class PollRepository {
         },
       },
     });
+  };
 
-    return pollInfo;
+  getPollAndUpdateViewCount = async (pollId: string) => {
+    return await prisma.poll.update({
+      where: { id: pollId },
+      data: { viewCount: { increment: 1 } },
+      include: {
+        admin: { select: { name: true } },
+        pollOptions: {
+          select: {
+            id: true,
+            content: true,
+            voteCount: true,
+          },
+        },
+      },
+    });
   };
 
   updatePoll = async (data: Poll, adminId: string, pollId: string) => {

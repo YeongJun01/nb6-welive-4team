@@ -8,7 +8,7 @@ class PollController {
   // 투표 생성
   createPoll = async (req: Request, res: Response) => {
     const data = create(req.body, pollStruct.pollInformation);
-    const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
+    const adminId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // admin3 정보, 업데이트 필요
     // const adminId = req.user?.id
     const poll = await pollService.createPoll(data, adminId);
 
@@ -18,7 +18,7 @@ class PollController {
   // 투표 목록 조회
   getPollList = async (req: Request, res: Response) => {
     const query = mask(req.query, pollStruct.getPollList);
-    const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
+    const boardId = '4ebae298-9690-435b-9d38-7709460bd31b'; // admin3 정보, 업데이트 필요
     // const boardId = req.user?.board.pollId;
     const adminId = '5b2195c7-a389-428d-a8d2-b9cb2b223a8c'; // admin3 정보, 업데이트 필요
     // const adminId = req.user?.id
@@ -27,11 +27,11 @@ class PollController {
   };
 
   // 투표 상세 조회
-  getPollInfo = async (req: Request, res: Response) => {
+  getPollDetail = async (req: Request, res: Response) => {
     const pollId = mask(req.params.pollId, commonStruct.uuid);
-    const boardId = '4b33ee9d-ee9c-49f9-9cef-78db5750b349'; // admin3 정보, 업데이트 필요
+    const boardId = '4ebae298-9690-435b-9d38-7709460bd31b'; // admin3 정보, 업데이트 필요
     // const boardId = req.params.board.pollId;
-    const pollInfo = await pollService.getPollInfo(pollId, boardId);
+    const pollInfo = await pollService.getPollDetail(pollId, boardId);
     res.status(200).json(pollInfo);
   };
 

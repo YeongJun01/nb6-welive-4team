@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/', asyncHandler(pollControllser.createPoll));
 router.get('/', asyncHandler(pollControllser.getPollList));
-router.get('/:pollId', asyncHandler(pollControllser.getPollInfo));
+router.get('/:pollId', asyncHandler(pollControllser.getPollDetail));
 router.patch('/:pollId', asyncHandler(pollControllser.updatePoll));
 router.delete('/:pollId', asyncHandler(pollControllser.deletePoll));
 
