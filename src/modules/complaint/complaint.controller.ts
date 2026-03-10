@@ -7,7 +7,7 @@ import commonStruct from '../../structs/common.validation';
 class ComplaintController {
   createComplaint = async (req: Request, res: Response) => {
     const data = create(req.body, complaintStruct.complaintInformation);
-    const createId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
+    const createId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3'; // user1 정보, 업데이트 필요
     // const createId = req.user?.id
 
     const complaint = await complaintService.createComplaint(data, createId);
@@ -17,9 +17,9 @@ class ComplaintController {
 
   getComplaintList = async (req: Request, res: Response) => {
     const query = mask(req.query, complaintStruct.getComplaintList);
-    const userId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3'; // user1 정보, 업데이트 필요
     // const createId = req.user?.id
-    const boardId = '2fa86d76-403b-4b8d-8c79-ab2b44113a39'; // 임시 정보 전달
+    const boardId = 'af4f6837-1534-491b-9eb0-b8e80cef219b'; // 임시 정보 전달
 
     const complaintList = await complaintService.getComplaintList(query, boardId, userId);
 
@@ -30,7 +30,7 @@ class ComplaintController {
     const complaintId = mask(req.params.complaintId, commonStruct.uuid);
 
     // 조회 하려는 사람의 id
-    const userId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3'; // user1 정보, 업데이트 필요
     // const userId = req.user?.id;
     const complaintDetail = await complaintService.getComplaintDetail(complaintId, userId);
 
@@ -44,9 +44,18 @@ class ComplaintController {
   };
 
   updateComplaintStatus = async (req: Request, res: Response) => {
-    console.log('test complaint status update controller');
+    const complaintId = mask(req.params.complaintId, commonStruct.uuid);
+    const status = mask(req.body, complaintStruct.complaintStatus);
+    const adminId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // admin id, 업데이트 필요
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3'; // user1 정보, 업데이트 필요
 
-    await complaintService.updateComplaintStatus(1);
+    const updateComplaintStatus = await complaintService.updateComplaintStatus(
+      complaintId,
+      status,
+      adminId,
+    );
+
+    res.status(200).json(updateComplaintStatus);
   };
 
   deleteComplaint = async (req: Request, res: Response) => {

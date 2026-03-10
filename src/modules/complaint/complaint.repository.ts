@@ -1,5 +1,10 @@
 import prisma from '../../lib/prisma';
 
+import { Infer } from 'superstruct';
+import complaintStruct from './complaint.validation';
+
+type status = Infer<typeof complaintStruct.complaintStatus>;
+
 class UserRepo {
   getUserInfo = async (userId: string) => {
     const user = await prisma.user.findUnique({
@@ -113,6 +118,13 @@ class ComplaintRepository {
     });
 
     return complaint;
+  };
+
+  updateComplaintStatus = async (complaintId: string, data: status) => {
+    await prisma.complaint.update({
+      where: { id: complaintId },
+      data: { status: data.status },
+    });
   };
 
   deleteComplaint = async (complaintId: string) => {

@@ -27,8 +27,13 @@ const getComplaintList = s.assign(
   }),
 );
 
+const complaintStatus = s.object({
+  status: s.enums(['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED']),
+});
+
 export default {
   complaintInformation,
   userInfo,
   getComplaintList,
+  complaintStatus,
 };

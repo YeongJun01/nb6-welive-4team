@@ -6,6 +6,8 @@ import complaintStruct from './complaint.validation';
 
 type Complaint = Infer<typeof complaintStruct.complaintInformation>;
 
+type status = Infer<typeof complaintStruct.complaintStatus>;
+
 class ComplaintService {
   private mapComplaintList = (complaint: any) => {
     return {
@@ -144,8 +146,26 @@ class ComplaintService {
     console.log('test complaint update', data);
   };
 
-  updateComplaintStatus = async (data: any) => {
-    console.log('test complaint update status', data);
+  updateComplaintStatus = async (complaintId: string, status: status, adminId: string) => {
+    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const admin = await userRepo.getUserInfo(adminId);
+
+    if (!complaint) {
+      throw new BadRequestError('존재하지 않는 민원입니다.');
+    }
+
+    if (!admin) {
+      throw new BadRequestError('존재하지 않는 사용자입니다.');
+    }
+
+    if (admin.id !== complaint.adminId) {
+      throw new BadRequestError('민원 상태를 수정할 수 없는 사용자입니다.');
+    }
+
+    await complaintRepository.updateComplaintStatus(complaintId, status);
+
+    const updatedComplaint = await complaintRepository.getComplaintDetail(complaintId);
+    return this.mapComplaintDetail(updatedComplaint);
   };
 
   deleteComplaint = async (complaintId: string, userId: string) => {
