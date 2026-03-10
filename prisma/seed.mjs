@@ -273,7 +273,7 @@ async function main() {
     '쓰레기 수거가 제대로 이루어지지 않습니다.',
   ];
   // 민원 처리 상태 후보 배열
-  const complaintStatuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'];
+  const complaintStatuses = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
 
   // 각 아파트마다 5개의 민원 생성
   createdUsers.forEach((user, index) => {
@@ -566,7 +566,7 @@ async function main() {
       });
 
       // 민원 해결 알림 (완료/거절 시)
-      if (['COMPLETED', 'REJECTED'].includes(complaint.status)) {
+      if (['RESOLVED', 'REJECTED'].includes(complaint.status)) {
         notificationsData.push({
           userId: resident.id,
           notiType: 'COMPLAINT_RESOLVED',

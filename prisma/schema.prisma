@@ -336,7 +336,7 @@ enum Status {
 enum ComplaintStatus {
   PENDING
   IN_PROGRESS
-  COMPLETED
+  RESOLVED
   REJECTED
 }
 
