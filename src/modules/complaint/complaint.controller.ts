@@ -38,9 +38,17 @@ class ComplaintController {
   };
 
   updateComplaint = async (req: Request, res: Response) => {
-    console.log('test complaint update controller');
+    const complaintId = mask(req.params.complaintId, commonStruct.uuid);
+    const data = mask(req.body, complaintStruct.complaintUpdate);
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3'; // user1 정보, 업데이트 필요
 
-    await complaintService.updateComplaint(1);
+    const { comments, ...updateComplaint } = await complaintService.updateComplaint(
+      complaintId,
+      data,
+      userId,
+    );
+
+    res.status(200).json(updateComplaint);
   };
 
   updateComplaintStatus = async (req: Request, res: Response) => {

@@ -120,6 +120,13 @@ class ComplaintRepository {
     return complaint;
   };
 
+  updateComplaint = async (complaintId: string, data: any) => {
+    await prisma.complaint.update({
+      where: { id: complaintId },
+      data: { ...data },
+    });
+  };
+
   updateComplaintStatus = async (complaintId: string, data: status) => {
     await prisma.complaint.update({
       where: { id: complaintId },

@@ -31,9 +31,16 @@ const complaintStatus = s.object({
   status: s.enums(['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED']),
 });
 
+const complaintUpdate = s.object({
+  title: s.string(),
+  content: s.string(),
+  isPublic: commonStruct.boolean,
+});
+
 export default {
   complaintInformation,
   userInfo,
   getComplaintList,
   complaintStatus,
+  complaintUpdate,
 };

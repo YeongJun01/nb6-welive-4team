@@ -142,8 +142,31 @@ class ComplaintService {
     return complaintDetail;
   };
 
-  updateComplaint = async (data: any) => {
-    console.log('test complaint update', data);
+  updateComplaint = async (complaintId: string, data: any, userId: string) => {
+    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const user = await userRepo.getUserInfo(userId);
+
+    if (!complaint) {
+      throw new BadRequestError('존재하지 않는 민원입니다.');
+    }
+
+    if (!user) {
+      throw new BadRequestError('존재하지 않는 사용자입니다.');
+    }
+
+    if (user.id !== complaint.creatorId) {
+      throw new BadRequestError('민원 수정 권한이 없습니다.');
+    }
+
+    if (complaint.status !== 'PENDING') {
+      throw new BadRequestError('처리중인 민원은 수정이 불가능 합니다');
+    }
+
+    await complaintRepository.updateComplaint(complaintId, data);
+
+    const updatedComplaint = await complaintRepository.getComplaintDetail(complaintId);
+
+    return this.mapComplaintDetail(updatedComplaint);
   };
 
   updateComplaintStatus = async (complaintId: string, status: status, adminId: string) => {
