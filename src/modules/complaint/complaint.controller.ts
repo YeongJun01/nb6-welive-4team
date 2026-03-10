@@ -70,7 +70,7 @@ class ComplaintController {
     const complaintId = mask(req.params.complaintId, commonStruct.uuid);
     // 삭제 하려는 사람의 id
     // const userId = 'ffd146ba-b02e-4abf-a671-cb469787343c'; // user1 정보, 업데이트 필요
-    const userId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3'; // user1 정보, 업데이트 필요
 
     await complaintService.deleteComplaint(complaintId, userId);
 

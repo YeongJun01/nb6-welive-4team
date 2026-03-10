@@ -96,13 +96,21 @@ class ComplaintRepository {
     return { complaintList, totalCount };
   };
 
-  getComplaintDetail = async (complaintId: string) => {
+  getComplaintById = async (complaintId: string) => {
     const complaint = await prisma.complaint.findUnique({
       where: {
         id: complaintId,
       },
       include: {
-        comments: true,
+        comments: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         creator: {
           select: {
             name: true,
@@ -120,23 +128,90 @@ class ComplaintRepository {
     return complaint;
   };
 
+  getComplaintAndUpdateViewCount = async (complaintId: string) => {
+    return await prisma.complaint.update({
+      where: { id: complaintId },
+      data: { viewCount: { increment: 1 } },
+      include: {
+        comments: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        creator: {
+          select: {
+            name: true,
+            residentLists: {
+              select: {
+                apartmentDong: true,
+                apartmentHo: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  };
+
   updateComplaint = async (complaintId: string, data: any) => {
-    await prisma.complaint.update({
+    return await prisma.complaint.update({
       where: { id: complaintId },
       data: { ...data },
+      include: {
+        creator: {
+          select: {
+            name: true,
+            residentLists: {
+              select: {
+                apartmentDong: true,
+                apartmentHo: true,
+              },
+            },
+          },
+        },
+      },
     });
   };
 
   updateComplaintStatus = async (complaintId: string, data: status) => {
-    await prisma.complaint.update({
+    return await prisma.complaint.update({
       where: { id: complaintId },
       data: { status: data.status },
+      include: {
+        comments: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        creator: {
+          select: {
+            name: true,
+            residentLists: {
+              select: {
+                apartmentDong: true,
+                apartmentHo: true,
+              },
+            },
+          },
+        },
+      },
     });
   };
 
-  deleteComplaint = async (complaintId: string) => {
+  deleteComplaint = async (complaintId: string, userId: string) => {
     await prisma.complaint.delete({
-      where: { id: complaintId },
+      where: {
+        id: complaintId,
+        creatorId: userId,
+      },
     });
   };
 }

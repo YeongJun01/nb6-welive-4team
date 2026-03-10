@@ -1,15 +1,16 @@
-import { Request, Response } from 'express';
 import complaintRepository, { userRepo, boardRepo } from './complaint.repository';
 import BadRequestError from '../../lib/errors/BadRequestError';
 import { Infer } from 'superstruct';
 import complaintStruct from './complaint.validation';
+import { ComplaintResponse, ComplaintDetailResponse } from './complaint.type';
 
 type Complaint = Infer<typeof complaintStruct.complaintInformation>;
-
+type ComplaintUpdate = Infer<typeof complaintStruct.complaintUpdate>;
+type ComplaintListQuery = Infer<typeof complaintStruct.getComplaintList>;
 type status = Infer<typeof complaintStruct.complaintStatus>;
 
 class ComplaintService {
-  private mapComplaintList = (complaint: any) => {
+  private mapComplaintList = (complaint: any): ComplaintResponse => {
     return {
       complaintId: complaint.id,
       userId: complaint.creatorId,
@@ -25,21 +26,20 @@ class ComplaintService {
       ho: complaint.apartmentHo,
     };
   };
-  private mapComplaintDetail = (complaint: any) => {
+
+  private mapComplaintDetail = (complaint: any): ComplaintDetailResponse => {
     return {
       ...this.mapComplaintList(complaint),
       content: complaint.content,
       boardType: 'COMPLAINT',
-      comments: [
-        complaint.comments.map((comment: any) => ({
-          id: comment.id,
-          userId: comment.creatorId,
-          content: comment.content,
-          createdAt: comment.createdAt,
-          updatedAt: comment.updatedAt,
-          writerName: comment.creator?.name,
-        })),
-      ],
+      comments: complaint.comments?.map((comment: any) => ({
+        id: comment.id,
+        userId: comment.userId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        writerName: comment.user?.name,
+      })),
     };
   };
 
@@ -77,7 +77,7 @@ class ComplaintService {
     return complaint;
   };
 
-  getComplaintList = async (query: any, boardId: string, userId: string) => {
+  getComplaintList = async (query: ComplaintListQuery, boardId: string, userId: string) => {
     // 임의로 정렬 추가
     const orderBy = query.orderBy === 'oldest' ? 'asc' : 'desc';
 
@@ -120,10 +120,10 @@ class ComplaintService {
   };
 
   getComplaintDetail = async (complaintId: string, userId: string) => {
-    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const complaintCheck = await complaintRepository.getComplaintById(complaintId);
     const user = await userRepo.getUserInfo(userId);
 
-    if (!complaint) {
+    if (!complaintCheck) {
       throw new BadRequestError('존재하지 않는 민원입니다.');
     }
 
@@ -132,18 +132,19 @@ class ComplaintService {
     }
 
     if (
-      complaint.isPublic === false &&
-      (complaint.creatorId !== userId || complaint.adminId !== userId)
+      complaintCheck.isPublic === false &&
+      (complaintCheck.creatorId !== userId || complaintCheck.adminId !== userId)
     ) {
       throw new BadRequestError('민원 조회 권한이 없습니다.');
     }
 
-    const complaintDetail = this.mapComplaintDetail(complaint);
-    return complaintDetail;
+    const complaintDetail = await complaintRepository.getComplaintAndUpdateViewCount(complaintId);
+
+    return this.mapComplaintDetail(complaintDetail);
   };
 
-  updateComplaint = async (complaintId: string, data: any, userId: string) => {
-    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+  updateComplaint = async (complaintId: string, data: ComplaintUpdate, userId: string) => {
+    const complaint = await complaintRepository.getComplaintById(complaintId);
     const user = await userRepo.getUserInfo(userId);
 
     if (!complaint) {
@@ -162,15 +163,13 @@ class ComplaintService {
       throw new BadRequestError('처리중인 민원은 수정이 불가능 합니다');
     }
 
-    await complaintRepository.updateComplaint(complaintId, data);
-
-    const updatedComplaint = await complaintRepository.getComplaintDetail(complaintId);
+    const updatedComplaint = await complaintRepository.updateComplaint(complaintId, data);
 
     return this.mapComplaintDetail(updatedComplaint);
   };
 
   updateComplaintStatus = async (complaintId: string, status: status, adminId: string) => {
-    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const complaint = await complaintRepository.getComplaintById(complaintId);
     const admin = await userRepo.getUserInfo(adminId);
 
     if (!complaint) {
@@ -185,14 +184,12 @@ class ComplaintService {
       throw new BadRequestError('민원 상태를 수정할 수 없는 사용자입니다.');
     }
 
-    await complaintRepository.updateComplaintStatus(complaintId, status);
-
-    const updatedComplaint = await complaintRepository.getComplaintDetail(complaintId);
+    const updatedComplaint = await complaintRepository.updateComplaintStatus(complaintId, status);
     return this.mapComplaintDetail(updatedComplaint);
   };
 
   deleteComplaint = async (complaintId: string, userId: string) => {
-    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const complaint = await complaintRepository.getComplaintById(complaintId);
     const user = await userRepo.getUserInfo(userId);
 
     if (!complaint) {
@@ -211,7 +208,7 @@ class ComplaintService {
       throw new BadRequestError('민원을 삭제할 수 없는 사용자입니다.');
     }
 
-    await complaintRepository.deleteComplaint(complaintId);
+    await complaintRepository.deleteComplaint(complaintId, userId);
   };
 }
 
