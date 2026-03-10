@@ -148,8 +148,27 @@ class ComplaintService {
     console.log('test complaint update status', data);
   };
 
-  deleteComplaint = async (data: any) => {
-    console.log('test complaint delete', data);
+  deleteComplaint = async (complaintId: string, userId: string) => {
+    const complaint = await complaintRepository.getComplaintDetail(complaintId);
+    const user = await userRepo.getUserInfo(userId);
+
+    if (!complaint) {
+      throw new BadRequestError('존재하지 않는 민원입니다.');
+    }
+
+    if (complaint.status !== 'PENDING') {
+      throw new BadRequestError('처리중인 민원은 삭제가 불가능 합니다');
+    }
+
+    if (!user) {
+      throw new BadRequestError('존재하지 않는 사용자입니다.');
+    }
+
+    if (user.id !== complaint.creatorId) {
+      throw new BadRequestError('민원을 삭제할 수 없는 사용자입니다.');
+    }
+
+    await complaintRepository.deleteComplaint(complaintId);
   };
 }
 

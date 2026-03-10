@@ -50,9 +50,14 @@ class ComplaintController {
   };
 
   deleteComplaint = async (req: Request, res: Response) => {
-    console.log('test complaint delete controller');
+    const complaintId = mask(req.params.complaintId, commonStruct.uuid);
+    // 삭제 하려는 사람의 id
+    // const userId = 'ffd146ba-b02e-4abf-a671-cb469787343c'; // user1 정보, 업데이트 필요
+    const userId = '04736128-0eff-49a6-bb05-029c3920a9af'; // user1 정보, 업데이트 필요
 
-    await complaintService.deleteComplaint(1);
+    await complaintService.deleteComplaint(complaintId, userId);
+
+    res.status(201).json({ message: '정상적으로 민원 삭제 처리되었습니다' });
   };
 }
 

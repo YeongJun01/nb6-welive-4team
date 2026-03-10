@@ -114,6 +114,12 @@ class ComplaintRepository {
 
     return complaint;
   };
+
+  deleteComplaint = async (complaintId: string) => {
+    await prisma.complaint.delete({
+      where: { id: complaintId },
+    });
+  };
 }
 
 const complaintRepository = new ComplaintRepository();
