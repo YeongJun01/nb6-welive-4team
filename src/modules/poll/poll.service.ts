@@ -1,0 +1,240 @@
+import { Infer } from 'superstruct';
+import pollStruct from './poll.validation';
+import BadRequestError from '../../lib/errors/BadRequestError';
+import pollRepository from './poll.repository';
+import { userRepo } from './poll.repository';
+
+type Poll = Infer<typeof pollStruct.pollInformation>;
+
+class PollService {
+  private dateCheck = (startDateStr: string, endDateStr: string) => {
+    const today = new Date();
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    if (startDate < today) {
+      throw new BadRequestError('투표 시작일을 재설정 바랍니다.');
+    }
+
+    if (startDate > endDate) {
+      throw new BadRequestError('투표 시작일이 종료일보다 빠를 수 없습니다.');
+    }
+
+    return { startDate, endDate };
+  };
+
+  private dbMappedStatus = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'UPCOMING';
+      case 'IN_PROGRESS':
+        return 'ONGOING';
+      case 'CLOSED':
+        return 'CLOSED';
+      case 'ALL':
+        return 'ALL';
+      default:
+        throw new BadRequestError('상태가 올바르지 않습니다.');
+    }
+  };
+
+  private getMappedStatus = (status: string) => {
+    switch (status) {
+      case 'UPCOMING':
+        return 'PENDING';
+      case 'ONGOING':
+        return 'IN_PROGRESS';
+      case 'CLOSED':
+        return 'CLOSED';
+      default:
+        throw new BadRequestError('상태가 올바르지 않습니다.');
+    }
+  };
+
+  private mapPollList = (poll: any) => {
+    return {
+      pollId: poll.id,
+      userId: poll.adminId,
+      title: poll.title,
+      writerName: poll.admin?.name,
+      buildingPermission: poll.buildingPermission,
+      createdAt: poll.createdAt,
+      updatedAt: poll.updatedAt,
+      startDate: poll.startDate,
+      endDate: poll.endDate,
+      status: this.getMappedStatus(poll.status),
+    };
+  };
+
+  private mapPollInfo = (poll: any) => {
+    return {
+      ...this.mapPollList(poll),
+      boardName: '주민 투표',
+      content: poll.description,
+      options: poll.pollOptions.map((option: any) => ({
+        optionId: option.id,
+        content: option.content,
+        voteCount: option.voteCount === null ? 0 : option.voteCount,
+      })),
+    };
+  };
+
+  // 투표 생성
+  createPoll = async (data: Poll, adminId: string) => {
+    // user 기능 추가 필요
+
+    const { options, status, ...pollData } = data;
+
+    const { startDate, endDate } = this.dateCheck(data.startDate, data.endDate);
+
+    if (options.length < 2) {
+      throw new BadRequestError('선택지는 2개 이상이어야 합니다.');
+    }
+
+    const pollStatus = this.dbMappedStatus(status);
+
+    if (pollStatus === 'ALL') {
+      throw new BadRequestError('상태가 올바르지 않습니다.');
+    }
+
+    const poll = await pollRepository.createPoll(
+      { ...data, status: pollStatus, startDate, endDate },
+      adminId,
+    );
+
+    return poll;
+  };
+
+  // 투표 목록 조회
+  getPollList = async (query: any, boardId: string, userId: string) => {
+    // 임의로 정렬 추가
+    const orderBy = query.orderBy === 'oldest' ? 'asc' : 'desc';
+    const pollStatus = this.dbMappedStatus(query.status);
+
+    // 유저 기능 + viewcount 기능 추가 작업 진행
+    // const user = await userRepo.getUserInfo(userId);
+    // if (!user) {
+    //   throw new BadRequestError('존재하지 않는 유저입니다.');
+    // }
+
+    // const buildingPermission = query.buildingPermission
+    //   ? query.buildingPermission
+    //   : [user.residentLists.apartmentDong, 'all'];
+    // getPollList 객체에 값 전달
+
+    const { pollList, totalCount } = await pollRepository.getPollList(
+      { ...query, status: pollStatus, orderBy },
+      boardId,
+    );
+
+    return {
+      pollList: pollList.map((poll: any) => this.mapPollList(poll)),
+      totalCount,
+    };
+  };
+
+  // 투표 상세 조회
+  getPollDetail = async (pollId: string, boardId: string) => {
+    const pollInfo = await pollRepository.getPollDetail(pollId);
+    if (!pollInfo) {
+      throw new BadRequestError('존재하지 않는 투표입니다.');
+    }
+
+    if (pollInfo.boardId !== boardId) {
+      throw new BadRequestError('접근 권한이 없습니다.');
+    }
+
+    // 일반 유저 정보를 기반으로 동 설정 필요
+    // if (
+    //   pollInfo.buildingPermission !== 'ALL' &&
+    //   pollInfo.buildingPermission !== userInfo.residentLists.apartmentDong
+    // ) {
+    //   throw new BadRequestError('접근 권한이 없습니다.');
+    // }
+
+    const pollDetail = await pollRepository.getPollAndUpdateViewCount(pollId);
+
+    return this.mapPollInfo(pollDetail);
+  };
+
+  // 투표 수정
+  updatePoll = async (data: Poll, adminId: string, pollId: string) => {
+    const pollInfo = await pollRepository.getPollDetail(pollId);
+
+    if (!pollInfo) {
+      throw new BadRequestError('존재하지 않는 투표입니다.');
+    }
+
+    if (pollInfo.adminId !== adminId) {
+      throw new BadRequestError('수정 권한이 없습니다.');
+    }
+
+    if (pollInfo.status !== 'UPCOMING') {
+      throw new BadRequestError('투표가 진행중이거나 종료되어 수정할 수 없습니다.');
+    }
+
+    // 유저 기능 생성 후 추가 작업 진행
+    // const admin = await userRepo.getUserInfo(userId);
+    // if (!admin) {
+    //   throw new BadRequestError('존재하지 않는 관리자입니다.');
+    // }
+    //
+    // if (admin.role !== "ADMIN") {
+    //   throw new BadRequestError('관리자만 수정할 수 있습니다.');
+    // }
+
+    const { options, status, ...pollData } = data;
+
+    const { startDate, endDate } = this.dateCheck(data.startDate, data.endDate);
+
+    if (options.length < 2) {
+      throw new BadRequestError('선택지는 2개 이상이어야 합니다.');
+    }
+
+    const pollStatus = this.dbMappedStatus(status);
+
+    if (pollStatus === 'ALL') {
+      throw new BadRequestError('상태가 올바르지 않습니다.');
+    }
+
+    const updatePoll = await pollRepository.updatePoll(
+      { ...data, status: pollStatus, startDate, endDate },
+      adminId,
+      pollId,
+    );
+
+    return updatePoll;
+  };
+
+  // 투표 삭제
+  deletePoll = async (pollId: string, boardId: string, adminId: string) => {
+    const pollInfo = await pollRepository.getPollDetail(pollId);
+    if (!pollInfo) {
+      throw new BadRequestError('존재하지 않는 투표입니다.');
+    }
+
+    if (pollInfo.boardId !== boardId) {
+      throw new BadRequestError('접근 권한이 없습니다.');
+    }
+
+    if (pollInfo.status !== 'UPCOMING') {
+      throw new BadRequestError('투표가 진행중이거나 종료되어 삭제할 수 없습니다.');
+    }
+
+    // 유저 기능 생성 후 추가 작업 진행
+    const user = await userRepo.getUserInfo(adminId);
+    if (!user) {
+      throw new BadRequestError('존재하지 않는 유저입니다.');
+    }
+
+    if (pollInfo.adminId !== adminId) {
+      throw new BadRequestError('삭제 권한이 없습니다.');
+    }
+
+    await pollRepository.deletePoll(pollId);
+  };
+}
+
+const pollService = new PollService();
+
+export default pollService;
