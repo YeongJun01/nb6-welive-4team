@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-<<<<<<< HEAD
 import prisma from '../../lib/prisma';
 
 class VoteRepository {
@@ -62,16 +61,6 @@ class VoteRepository {
         voteCount: countVote,
       },
     });
-=======
-
-class VoteRepository {
-  createVote = async (optionId: string) => {
-    console.log('test vote on!', optionId);
-  };
-
-  deleteVote = async (optionId: string) => {
-    console.log('test vote off!', optionId);
->>>>>>> d1ec287 (✨ feat : Vote 기본 구조 정리)
   };
 }
 
