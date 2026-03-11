@@ -11,6 +11,8 @@ const boolean = s.coerce(s.boolean(), s.string(), (value) => {
   return value;
 });
 
+const date = s.coerce(s.date(), s.string(), (value) => new Date(value));
+
 const stringArray = s.coerce(
   s.array(s.string()),
   s.union([s.string(), s.array(s.string())]),
@@ -28,6 +30,7 @@ export default {
   uuid,
   number,
   boolean,
+  date,
   stringArray,
   pagination,
 };
