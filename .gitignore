@@ -1,9 +1,6 @@
 node_modules
 dist
 .env
-<<<<<<< HEAD
 __http__
-=======
 test
 docs
->>>>>>> 72b6d562c7b616001de2c66c6358fe48583d78c1
