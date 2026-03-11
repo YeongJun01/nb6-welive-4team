@@ -2,6 +2,7 @@
 import prisma from '../../lib/prisma';
 import { Request, Response, NextFunction } from 'express';
 import apartmentService from './apartment.service';
+import { UserService } from '../user';
 import NotFoundError from '../../lib/errors/NotFoundError';
 import UnauthorizedError from '../../lib/errors/UnauthorizedError';
 
@@ -17,10 +18,10 @@ class ApartmentController {
       throw new UnauthorizedError('로그인이 필요합니다.');
     }
     // 인증 미들웨어가 붙으면 req.user에 로그인한 유저 정보가 담깁니다.
-    // 현재는 타입 오류를 방지하기 위해 any로 단언하거나, 가상의 유저를 사용한다고 가정합니다.
     const userId = req.user!.id;
 
     // DB에서 유저 조회
+    // const user = await UserService.prototype.findUserById(userId);
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -28,7 +29,7 @@ class ApartmentController {
     if (!user) {
       throw new UnauthorizedError('유저를 찾을 수 없습니다.');
     }
-    const role = user?.role;
+    const role = user.role;
 
     let result;
 

@@ -7,6 +7,7 @@ import apartmentRouter from './modules/apartment/apartment.router';
 import { defaultNotFoundHandler, errorHandler } from './middlewares/errorHandler';
 import authRouter from './modules/auth/auth.router';
 import userRouter from './modules/user/user.router';
+import residentListRouter from './modules/residentList/residentList.router';
 
 const app = express();
 
@@ -25,6 +26,9 @@ app.use('/api/users', userRouter);
 
 // 아파트 관련 라우터
 app.use('/apartments', apartmentRouter);
+
+// 입주자 목록 관련 라우터
+app.use('/residents', residentListRouter);
 
 //404 처리 미들웨어 및 에러 핸들러 등록
 app.use(defaultNotFoundHandler);
