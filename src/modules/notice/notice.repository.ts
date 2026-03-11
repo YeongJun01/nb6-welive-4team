@@ -48,6 +48,21 @@ class NoticeRepository {
 
     return notice;
   };
+
+  getNoticeDetail = async (noticeId: string) => {
+    return await prisma.notice.findUnique({
+      where: { id: noticeId },
+    });
+  };
+
+  deleteNotice = async (noticeId: string) => {
+    return await prisma.notice.update({
+      where: { id: noticeId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  };
 }
 
 const noticeRepository = new NoticeRepository();

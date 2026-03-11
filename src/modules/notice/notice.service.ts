@@ -29,6 +29,26 @@ class NoticeService {
     const notice = await noticeRepository.createNotice(data, adminId);
     return notice;
   };
+
+  deleteNotice = async (noticeId: string, adminId: string) => {
+    const notice = await noticeRepository.getNoticeDetail(noticeId);
+    if (!notice) {
+      throw new BadRequestError('게시글 정보를 찾을 수 없습니다');
+    }
+
+    if (notice.adminId !== adminId) {
+      throw new BadRequestError('게시글 삭제 권한이 없습니다');
+    }
+
+    const admin = await userRepo.getUserInfo(adminId);
+    
+    if (!admin) {
+      throw new BadRequestError('사용자 정보를 찾을 수 없습니다');
+    }
+
+    const deletedNotice = await noticeRepository.deleteNotice(noticeId);
+    return deletedNotice;
+  };
 }
 
 const noticeService = new NoticeService();
