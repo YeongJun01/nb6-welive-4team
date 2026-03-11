@@ -207,7 +207,7 @@ class PollService {
   };
 
   // 투표 삭제
-  deletePoll = async (pollId: string, boardId: string) => {
+  deletePoll = async (pollId: string, boardId: string, adminId: string) => {
     const pollInfo = await pollRepository.getPollDetail(pollId);
     if (!pollInfo) {
       throw new BadRequestError('존재하지 않는 투표입니다.');
@@ -222,14 +222,14 @@ class PollService {
     }
 
     // 유저 기능 생성 후 추가 작업 진행
-    // const user = await userRepo.getUserInfo(userId);
-    // if (!user) {
-    //   throw new BadRequestError('존재하지 않는 유저입니다.');
-    // }
-    //
-    // if (user.role !== "ADMIN") {
-    //   throw new BadRequestError('관리자만 삭제할 수 있습니다.');
-    // }
+    const user = await userRepo.getUserInfo(adminId);
+    if (!user) {
+      throw new BadRequestError('존재하지 않는 유저입니다.');
+    }
+
+    if (pollInfo.adminId !== adminId) {
+      throw new BadRequestError('삭제 권한이 없습니다.');
+    }
 
     await pollRepository.deletePoll(pollId);
   };
