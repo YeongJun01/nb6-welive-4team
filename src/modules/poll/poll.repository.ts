@@ -18,6 +18,7 @@ class UserRepo {
     const user = await prisma.user.findUnique({
       where: {
         id: userId,
+        deletedAt: null,
       },
       include: {
         residentLists: {
