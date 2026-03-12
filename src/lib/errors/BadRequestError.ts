@@ -1,4 +1,4 @@
-class BadRequestError extends Error {
+export class BadRequestError extends Error {
   status: number;
 
   constructor(message: string = '잘못된 요청입니다.') {
@@ -7,5 +7,3 @@ class BadRequestError extends Error {
     this.status = 400;
   }
 }
-
-export default BadRequestError;

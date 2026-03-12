@@ -1,6 +1,6 @@
 import { Infer } from 'superstruct';
 import pollStruct from './poll.validation';
-import BadRequestError from '../../lib/errors/BadRequestError';
+import { BadRequestError } from '../../lib/errors';
 import pollRepository from './poll.repository';
 import { userRepo } from './poll.repository';
 

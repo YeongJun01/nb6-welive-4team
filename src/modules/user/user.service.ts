@@ -3,6 +3,7 @@ import { UserRepository } from './user.repository';
 import { ResidentListRepository } from '../residentList/residentList.repository';
 import { SignUpDto, UpdatePasswordDto } from './user.dto';
 import * as bcrypt from 'bcrypt';
+import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
 
 export class UserService {
   constructor(
@@ -21,13 +22,13 @@ export class UserService {
     // 1. 이메일 중복 체크
     const checkEmail = await this.userRepository.findUserByUnique({ email: data.email });
     if (checkEmail) {
-      throw new Error('이미 가입된 이메일입니다.');
+      throw new ConflictError('이미 가입된 이메일입니다.');
     }
 
     // 2. 연락처 중복 체크
     const checkContact = await this.userRepository.findUserByUnique({ contact: data.contact });
     if (checkContact) {
-      throw new Error('이미 가입된 연락처입니다.');
+      throw new ConflictError('이미 가입된 연락처입니다.');
     }
 
     // 3. 비밀번호 암호화
@@ -69,7 +70,7 @@ export class UserService {
     // 1. 본인확인
     const checkUser = await this.userRepository.findUserByUnique({ id: userId });
     if (!checkUser) {
-      throw new Error('해당 사용자가 없습니다.');
+      throw new NotFoundError('해당 사용자가 없습니다.');
     }
 
     // 2. 이메일 중복 체크
@@ -78,7 +79,7 @@ export class UserService {
         email: updateData.email as string,
       });
       if (checkEmail && checkEmail.id !== userId) {
-        throw new Error('이미 가입된 이메일입니다.');
+        throw new ConflictError('이미 가입된 이메일입니다.');
       }
     }
 
@@ -87,8 +88,8 @@ export class UserService {
       const checkContact = await this.userRepository.findUserByUnique({
         contact: updateData.contact as string,
       });
-      if (checkContact) {
-        throw new Error('이미 가입된 연락처입니다.');
+      if (checkContact && checkContact.id !== userId) {
+        throw new ConflictError('이미 가입된 연락처입니다.');
       }
     }
 
@@ -104,13 +105,13 @@ export class UserService {
     // 1. 본인 확인(ID찾기)
     const checkUser = await this.userRepository.findUserByUnique({ id: userId });
     if (!checkUser) {
-      throw new Error('해당 사용자가 없습니다.');
+      throw new NotFoundError('해당 사용자가 없습니다.');
     }
 
     // 2. 현재 비밀번호 검증
     const isPasswordValid = await bcrypt.compare(updateData.currentPassword, checkUser.password);
     if (!isPasswordValid) {
-      throw new Error('현재 비밀번호가 일치하지 않습니다.');
+      throw new UnauthorizedError('현재 비밀번호가 일치하지 않습니다.');
     }
 
     // 3. 새 비밀번호 암호화
@@ -138,7 +139,7 @@ export class UserService {
     // 1. 요청자 확인
     const requestUser = await this.userRepository.findUserByUnique({ id: requestId });
     if (!requestUser) {
-      throw new Error('요청자가 존재하지 않습니다.');
+      throw new NotFoundError('요청자가 존재하지 않습니다.');
     }
     // 2. 권한 검증
     const isAuthorized =
@@ -146,7 +147,7 @@ export class UserService {
       (requestUser.role === 'SUPER_ADMIN' && role === 'ADMIN');
 
     if (!isAuthorized) {
-      throw new Error('권한이 없습니다.');
+      throw new ForbiddenError('권한이 없습니다.');
     }
 
     // 3. 승인/거절 처리
@@ -164,7 +165,7 @@ export class UserService {
     // 1. 요청자 확인
     const requestUser = await this.userRepository.findUserByUnique({ id: requestId });
     if (!requestUser) {
-      throw new Error('요청자가 존재하지 않습니다.');
+      throw new NotFoundError('요청자가 존재하지 않습니다.');
     }
 
     // 2. 권한 검증
@@ -173,7 +174,7 @@ export class UserService {
       (requestUser.role === 'SUPER_ADMIN' && role === 'ADMIN');
 
     if (!isAuthorized) {
-      throw new Error('권한이 없습니다.');
+      throw new ForbiddenError('권한이 없습니다.');
     }
 
     // 3. 일괄삭제 처리
