@@ -49,9 +49,76 @@ class NoticeRepository {
     return notice;
   };
 
+  getNoticeList = async (query: any, boardId: string) => {
+    const getNoticeFilter: any = {
+      boardId,
+      status: query.status ? query.status : undefined,
+      deletedAt: null,
+    };
+
+    if (query.search) {
+      getNoticeFilter.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { content: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [noticeList, totalCount] = await Promise.all([
+      prisma.notice.findMany({
+        where: getNoticeFilter,
+        orderBy: { createdAt: query.orderBy || 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        include: {
+          admin: {
+            select: {
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              comments: true,
+            },
+          },
+        },
+      }),
+      prisma.notice.count({
+        where: getNoticeFilter,
+      }),
+    ]);
+
+    return { noticeList, totalCount };
+  };
+
   getNoticeDetail = async (noticeId: string) => {
     return await prisma.notice.findUnique({
       where: { id: noticeId },
+      include: {
+        board: true,
+      },
+    });
+  };
+
+  getNoticeAndUpdateViewCount = async (noticeId: string) => {
+    return await prisma.notice.update({
+      where: { id: noticeId },
+      data: { viewCount: { increment: 1 } },
+      include: {
+        comments: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        admin: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
   };
 

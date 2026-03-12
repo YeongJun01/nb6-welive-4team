@@ -20,11 +20,12 @@ const pollInformation = s.object({
 });
 
 const getPollList = s.assign(
-  // 기본 조회 설정 : page, limit, keyword, orderBy
+  // 기본 조회 설정 : page, limit, orderBy
   commonStruct.pagination,
   s.object({
     buildingPermission: s.optional(commonStruct.stringArray),
     status: s.defaulted(s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED', 'ALL']), 'ALL'),
+    keyword: s.optional(s.string()),
   }),
 );
 

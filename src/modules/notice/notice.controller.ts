@@ -13,12 +13,24 @@ class NoticeController {
 
     res.status(201).json({ message: '정상적으로 등록 처리되었습니다' });
   };
+
   getNoticeList = async (req: Request, res: Response) => {
-    console.log('hello notice list');
+    const query = create(req.query, noticeStruct.getNoticeList);
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3';
+    const boardId = '5bd33519-7a7d-4352-99d9-432144b3d6ce';
+
+    const noticeList = await noticeService.getNoticeList(query, userId, boardId);
+
+    res.status(200).json(noticeList);
   };
 
   getNoticeDetail = async (req: Request, res: Response) => {
-    console.log('hello notice detail');
+    const noticeId = mask(req.params.noticeId, commonStruct.uuid);
+    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3';
+
+    const notice = await noticeService.getNoticeDetail(noticeId, userId);
+
+    res.status(201).json(notice);
   };
 
   updateNotice = async (req: Request, res: Response) => {

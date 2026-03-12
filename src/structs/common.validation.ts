@@ -21,8 +21,7 @@ const stringArray = s.coerce(
 
 const pagination = s.object({
   page: s.defaulted(number, 1),
-  limit: s.defaulted(number, 10),
-  keyword: s.optional(s.string()),
+  limit: s.defaulted(number, 11),
   orderBy: s.defaulted(s.enums(['oldest', 'newest']), 'newest'),
 });
 

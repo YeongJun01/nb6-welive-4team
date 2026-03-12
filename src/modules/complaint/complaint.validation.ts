@@ -17,11 +17,12 @@ const complaintInformation = s.object({
 });
 
 const getComplaintList = s.assign(
-  // 기본 조회 설정 : page, limit, keyword, orderBy
+  // 기본 조회 설정 : page, limit, orderBy
   commonStruct.pagination,
   s.object({
     status: s.optional(s.enums(['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'])),
     isPublic: s.defaulted(commonStruct.boolean, true),
+    keyword: s.optional(s.string()),
     dong: s.optional(s.string()),
     ho: s.optional(s.string()),
   }),

@@ -18,6 +18,24 @@ const createNotice = s.object({
   endDate: s.optional(commonStruct.date),
 });
 
+const getNoticeList = s.assign(
+  // 기본 조회 설정 : page, limit, orderBy
+  commonStruct.pagination,
+  s.object({
+    category: s.optional(
+      s.enums([
+        'MAINTENANCE',
+        'EMERGENCY',
+        'COMMUNITY',
+        'RESIDENT_VOTE',
+        'RESIDENT_COUNCIL',
+        'ETC',
+      ]),
+    ),
+    search: s.optional(s.string()),
+  }),
+);
+
 const updateNotice = s.assign(
   createNotice,
   s.object({
@@ -27,5 +45,6 @@ const updateNotice = s.assign(
 
 export default {
   createNotice,
+  getNoticeList,
   updateNotice,
 };
