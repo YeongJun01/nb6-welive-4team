@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, ResidentList } from '@prisma/client';
 import { CreateResidentDto, IsHouseholder } from './residentList.dto';
 
 export class ResidentListRepository {
@@ -156,6 +156,14 @@ export class ResidentListRepository {
       data: {
         deletedAt: new Date(),
       },
+    });
+  }
+
+  // 입주민 명부에 userId 연결 (회원가입 자동 승인 시 호출)
+  async updateResidentUserId(residentId: ResidentList['id'], userId: string) {
+    return await this.prisma.residentList.update({
+      where: { id: residentId },
+      data: { userId },
     });
   }
 }
