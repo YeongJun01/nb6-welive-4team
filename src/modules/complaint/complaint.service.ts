@@ -1,5 +1,5 @@
 import complaintRepository, { userRepo, boardRepo } from './complaint.repository';
-import BadRequestError from '../../lib/errors/BadRequestError';
+import { BadRequestError } from '../../lib/errors';
 import { Infer } from 'superstruct';
 import complaintStruct from './complaint.validation';
 import { ComplaintResponse, ComplaintDetailResponse } from './complaint.type';

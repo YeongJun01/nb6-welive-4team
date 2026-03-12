@@ -1,4 +1,4 @@
-class ConflictError extends Error {
+export class ConflictError extends Error {
   status: number;
 
   constructor(message: string = '이미 존재하는 데이터입니다.') {
@@ -7,5 +7,3 @@ class ConflictError extends Error {
     this.status = 409;
   }
 }
-
-export default ConflictError;

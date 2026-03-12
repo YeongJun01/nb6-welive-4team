@@ -1,15 +1,10 @@
-// 1. login
-// 2. generateAccessToken
-// 3. generateRefreshToken
-// 4. verifyToken
-
 import jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
 import { LoginDto } from './auth.dto';
 import { UserRepository } from '../user/user.repository';
 import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from '../../lib/constants';
-import UnauthorizedError from '../../lib/errors/UnauthorizedError';
+import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
 
 export class AuthService {
   constructor(private readonly userRepository: UserRepository) {}

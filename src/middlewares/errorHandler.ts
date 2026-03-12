@@ -1,11 +1,13 @@
 import { StructError } from 'superstruct';
 import { Request, Response, NextFunction } from 'express';
-import BadRequestError from '../lib/errors/BadRequestError';
-import NotFoundError from '../lib/errors/NotFoundError';
-import ConflictError from '../lib/errors/ConflictError';
-import ValidationError from '../lib/errors/ValidationError';
-import UnauthorizedError from '../lib/errors/UnauthorizedError';
-import ForbiddenError from '../lib/errors/ForbiddenError';
+import {
+  BadRequestError,
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+  UnauthorizedError,
+  ForbiddenError,
+} from '../lib/errors/';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export function defaultNotFoundHandler(req: Request, res: Response, next: NextFunction) {
