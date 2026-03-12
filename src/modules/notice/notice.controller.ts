@@ -8,7 +8,6 @@ class NoticeController {
   createNotice = async (req: Request, res: Response) => {
     const data = create(req.body, noticeStruct.createNotice);
     const adminId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // admin 정보, 업데이트 필요
-    // const boardId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // board 정보, 업데이트 필요
 
     const notice = await noticeService.createNotice(data, adminId);
 
@@ -23,7 +22,12 @@ class NoticeController {
   };
 
   updateNotice = async (req: Request, res: Response) => {
-    console.log('hello notice update');
+    const data = create(req.body, noticeStruct.updateNotice);
+    const noticeId = mask(req.params.noticeId, commonStruct.uuid);
+
+    const notice = await noticeService.updateNotice(data, noticeId);
+
+    res.status(201).json(notice);
   };
 
   deleteNotice = async (req: Request, res: Response) => {

@@ -55,6 +55,25 @@ class NoticeRepository {
     });
   };
 
+  updateNotice = async (data: any, noticeId: string) => {
+    const notice = await prisma.notice.update({
+      where: { id: noticeId },
+      data: {
+        ...data,
+      },
+      include: {
+        admin: true,
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
+    });
+
+    return notice;
+  };
+
   deleteNotice = async (noticeId: string) => {
     return await prisma.notice.update({
       where: { id: noticeId },
