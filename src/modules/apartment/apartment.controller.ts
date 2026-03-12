@@ -2,9 +2,7 @@
 import prisma from '../../lib/prisma';
 import { Request, Response, NextFunction } from 'express';
 import apartmentService from './apartment.service';
-import { UserService } from '../user';
-import NotFoundError from '../../lib/errors/NotFoundError';
-import UnauthorizedError from '../../lib/errors/UnauthorizedError';
+import { NotFoundError, UnauthorizedError } from '../../lib/errors';
 
 class ApartmentController {
   // 1. 아파트 목록 조회

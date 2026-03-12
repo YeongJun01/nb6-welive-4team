@@ -1,4 +1,3 @@
-import { Apartment } from '@prisma/client';
 import apartmentRepository from './apartment.repository';
 import {
   ApartmentListPublicDto,
@@ -15,10 +14,10 @@ class ApartmentService {
     name?: string;
     address?: string;
   }): Promise<ApartmentListPublicDto> {
-    // 1. 레포지토리에서 전체 아파트 목록을 가져옵니다.
+    // 1. 레포지토리에서 전체 아파트 목록 추출
     const apartments = await apartmentRepository.getApartments(params);
 
-    // 2. 가져온 데이터를 ApartmentPublicDto 형태로 변환(Mapping)합니다.
+    // 2. 가져온 데이터를 ApartmentPublicDto 형태로 변환
     const publicApartments = apartments.map((apt) => {
       return {
         id: apt.id,
@@ -76,15 +75,15 @@ class ApartmentService {
     adminId: string,
     params?: { keyword?: string; name?: string; address?: string },
   ): Promise<ApartmentListResponseDto> {
-    // 1. 레포지토리에서 관리자 ID로 아파트를 조회합니다.
+    // 1. 레포지토리에서 관리자 ID로 아파트를 조회
     const apt = await apartmentRepository.getApartmentByAdminId(adminId, params);
 
-    // 2. 아파트가 존재하지 않으면 빈 목록을 반환합니다.
+    // 2. 아파트가 존재하지 않으면 빈 목록을 반환
     if (!apt) {
       return { apartments: [], totalCount: 0 };
     }
 
-    // 3. 조회된 아파트 정보를 DTO에 맞게 매핑합니다.
+    // 3. 조회된 아파트 정보를 DTO에 맞게 매핑
     const managedApartment = {
       id: apt.id,
       name: apt.name,
@@ -183,7 +182,7 @@ class ApartmentService {
     };
   }
 
-  // 아파트 생성 (이건 Role 구분 없이 공통 로직일 가능성이 높음)
+  // 아파트 생성
   async createApartment(data: CreateApartmentDto) {
     return await apartmentRepository.createApartment(data);
   }
