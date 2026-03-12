@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './auth.dto';
-import UnauthorizedError from '../../lib/errors/UnauthorizedError';
+import { UnauthorizedError } from '../../lib/errors';
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import voteRepository from './vote.repository';
 import { userRepo } from '../poll/poll.repository';
 import prisma from '../../lib/prisma';
-import BadRequestError from '../../lib/errors/BadRequestError';
+import { BadRequestError } from '../../lib/errors';
 
 class VoteService {
   private validateVoteAbility = async (optionId: string, userId: string) => {

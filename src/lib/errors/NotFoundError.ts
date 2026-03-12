@@ -1,4 +1,4 @@
-class NotFoundError extends Error {
+export class NotFoundError extends Error {
   status: number;
 
   constructor(message: string = '리소스를 찾을 수 없습니다.') {
@@ -7,5 +7,3 @@ class NotFoundError extends Error {
     this.status = 404;
   }
 }
-
-export default NotFoundError;
