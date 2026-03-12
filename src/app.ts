@@ -11,6 +11,7 @@ import residentListRouter from './modules/residentList/residentList.router';
 import pollRouter from './modules/poll/poll.router';
 import voteRouter from './modules/vote/vote.router';
 import complaintRouter from './modules/complaint/complaint.router';
+import notificationRouter from './modules/notification/notification.router';
 
 const app = express();
 
@@ -24,11 +25,12 @@ app.get('/', (req, res) => {
 });
 
 // 라우터 설정
-app.use('/api/auth', authRouter);
-app.use('/api/users', userRouter);
+app.use('/auth', authRouter);
+app.use('/users', userRouter);
 app.use('/polls', pollRouter); // 투표 게시판
 app.use('/options', voteRouter); // 투표 옵션
 app.use('/complaints', complaintRouter); // 민원 게시판
+app.use('/notifications', notificationRouter); // 알림
 
 // 아파트 관련 라우터
 app.use('/apartments', apartmentRouter);
