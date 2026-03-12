@@ -1,9 +1,8 @@
 import prisma from '../../lib/prisma';
 import { Router } from 'express';
-import { asyncHandler } from '../../middlewares/asyncHandler';
+import { asyncHandler, authMiddleware } from '../../middlewares';
 import { UserController, UserService, UserRepository } from './';
 import { ResidentListRepository } from '../residentList/residentList.repository';
-import { authMiddleware } from '../../middlewares/authMiddleware';
 
 const router = Router();
 

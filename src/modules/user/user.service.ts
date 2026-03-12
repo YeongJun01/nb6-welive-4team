@@ -1,9 +1,9 @@
 import { Prisma, Status, User } from '@prisma/client';
-import { UserRepository } from './user.repository';
+import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
+import { UserRepository } from './';
 import { ResidentListRepository } from '../residentList/residentList.repository';
 import { SignUpDto, UpdatePasswordDto } from './user.dto';
 import * as bcrypt from 'bcrypt';
-import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
 
 export class UserService {
   constructor(
@@ -187,23 +187,34 @@ export class UserService {
   /**
    * 6. 관리자 정보 수정 (슈퍼관리자 전용)
    */
-  async updateAdminInfo(requestId: User['id'], adminId: User['id'], updateData: Prisma.UserUpdateInput) {
+  async updateAdminInfo(
+    requestId: User['id'],
+    adminId: User['id'],
+    updateData: Prisma.UserUpdateInput,
+  ) {
     const requestUser = await this.userRepository.findUserByUnique({ id: requestId });
     if (!requestUser) throw new NotFoundError('요청자가 존재하지 않습니다.');
-    if (requestUser.role !== 'SUPER_ADMIN') throw new ForbiddenError('슈퍼관리자만 수행할 수 있습니다.');
+    if (requestUser.role !== 'SUPER_ADMIN')
+      throw new ForbiddenError('슈퍼관리자만 수행할 수 있습니다.');
 
     const targetAdmin = await this.userRepository.findUserByUnique({ id: adminId });
     if (!targetAdmin) throw new NotFoundError('해당 관리자가 존재하지 않습니다.');
     if (targetAdmin.role !== 'ADMIN') throw new ForbiddenError('관리자 계정만 수정할 수 있습니다.');
 
     if (updateData.email) {
-      const checkEmail = await this.userRepository.findUserByUnique({ email: updateData.email as string });
-      if (checkEmail && checkEmail.id !== adminId) throw new ConflictError('이미 가입된 이메일입니다.');
+      const checkEmail = await this.userRepository.findUserByUnique({
+        email: updateData.email as string,
+      });
+      if (checkEmail && checkEmail.id !== adminId)
+        throw new ConflictError('이미 가입된 이메일입니다.');
     }
 
     if (updateData.contact) {
-      const checkContact = await this.userRepository.findUserByUnique({ contact: updateData.contact as string });
-      if (checkContact && checkContact.id !== adminId) throw new ConflictError('이미 가입된 연락처입니다.');
+      const checkContact = await this.userRepository.findUserByUnique({
+        contact: updateData.contact as string,
+      });
+      if (checkContact && checkContact.id !== adminId)
+        throw new ConflictError('이미 가입된 연락처입니다.');
     }
 
     return await this.userRepository.updateUser(adminId, updateData);
@@ -215,7 +226,8 @@ export class UserService {
   async deleteAdmin(requestId: User['id'], adminId: User['id']) {
     const requestUser = await this.userRepository.findUserByUnique({ id: requestId });
     if (!requestUser) throw new NotFoundError('요청자가 존재하지 않습니다.');
-    if (requestUser.role !== 'SUPER_ADMIN') throw new ForbiddenError('슈퍼관리자만 수행할 수 있습니다.');
+    if (requestUser.role !== 'SUPER_ADMIN')
+      throw new ForbiddenError('슈퍼관리자만 수행할 수 있습니다.');
 
     const targetAdmin = await this.userRepository.findUserByUnique({ id: adminId });
     if (!targetAdmin) throw new NotFoundError('해당 관리자가 존재하지 않습니다.');
