@@ -8,14 +8,15 @@ export class AuthController {
 
   async login(req: Request, res: Response) {
     const loginDto: LoginDto = req.body;
-    const { accessToken, refreshToken } = await this.authService.login(loginDto);
+    const { accessToken, refreshToken, userInfo } = await this.authService.login(loginDto);
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    res.status(200).json({ message: '로그인 성공', accessToken });
+    res.setHeader('Authorization', `Bearer ${accessToken}`);
+    res.status(200).json(userInfo);
   }
 
   async refresh(req: Request, res: Response) {
@@ -23,11 +24,10 @@ export class AuthController {
     if (!refreshToken) {
       throw new UnauthorizedError('리프레시 토큰이 없습니다.');
     }
-
     const { userId } = this.authService.verifyToken(refreshToken, 'refresh');
     const accessToken = this.authService.generateAccessToken(userId);
-
-    res.status(200).json({ message: '리프레시 성공', accessToken });
+    res.setHeader('Authorization', `Bearer ${accessToken}`);
+    res.status(200).json({ message: '토큰 갱신 성공' });
   }
 
   async logout(req: Request, res: Response) {

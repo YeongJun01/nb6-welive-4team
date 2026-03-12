@@ -4,14 +4,14 @@ import { User } from '@prisma/client';
 import { LoginDto } from './auth.dto';
 import { UserRepository } from '../user/user.repository';
 import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from '../../lib/constants';
-import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
+import { UnauthorizedError } from '../../lib/errors';
 
 export class AuthService {
   constructor(private readonly userRepository: UserRepository) {}
 
   async login(loginDto: LoginDto) {
-    // 1. 이메일로 유저 조회
-    const user = await this.userRepository.findUserByUnique({ email: loginDto.email });
+    // 1. 이메일로 유저 조회 (apartment, boards, residentList 포함)
+    const user = await this.userRepository.findUserWithDetails({ email: loginDto.email });
     if (!user) {
       throw new UnauthorizedError('이메일 또는 비밀번호가 일치하지 않습니다.');
     }
@@ -31,7 +31,31 @@ export class AuthService {
     const accessToken = this.generateAccessToken(user.id);
     const refreshToken = this.generateRefreshToken(user.id);
 
-    return { accessToken, refreshToken };
+    // 5. boardIds 가공
+    const boardIds: Record<string, string> = {};
+    if (user.apartment?.boards) {
+      for (const board of user.apartment.boards) {
+        boardIds[board.boardType] = board.id;
+      }
+    }
+
+    // 6. 응답 데이터 가공
+    const userInfo = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      joinStatus: user.joinStatus,
+      apartmentId: user.apartmentId,
+      apartmentName: user.apartment?.name ?? null,
+      residentDong: user.residentLists?.apartmentDong ?? null,
+      boardIds,
+      username: user.username,
+      contact: user.contact,
+      avatar: user.avatar,
+    };
+
+    return { accessToken, refreshToken, userInfo };
   }
 
   generateAccessToken(userId: User['id']) {
