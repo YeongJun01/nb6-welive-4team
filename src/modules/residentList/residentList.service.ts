@@ -1,9 +1,7 @@
-import ConflictError from '../../lib/errors/ConflictError';
-import ForbiddenError from '../../lib/errors/ForbiddenError';
-import NotFoundError from '../../lib/errors/NotFoundError';
+import { ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import apartmentRepository from '../apartment/apartment.repository';
 import { UserRepository } from '../user';
-import { CreateResidentDto, IsHouseholder, ResidentStatus } from './residentList.dto';
+import { CreateResidentDto, ResidentStatus } from './residentList.dto';
 import { ResidentListRepository } from './residentList.repository';
 
 export class ResidentListService {

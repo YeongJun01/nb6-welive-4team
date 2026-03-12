@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ResidentListService } from './residentList.service';
 import { UserService } from '../user';
-import BadRequestError from '../../lib/errors/BadRequestError';
+import { BadRequestError } from '../../lib/errors';
 import { assert } from 'node:console';
 import { CreateResident, UpdateResident } from './residentListStructs';
 
