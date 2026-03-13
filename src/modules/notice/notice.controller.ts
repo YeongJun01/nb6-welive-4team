@@ -6,27 +6,26 @@ import commonStruct from '../../structs/common.validation';
 
 class NoticeController {
   createNotice = async (req: Request, res: Response) => {
-    const data = create(req.body, noticeStruct.createNotice);
-    const adminId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // admin 정보, 업데이트 필요
+    const data = create(req.body, noticeStruct.noticeInfo);
+    const adminId = req.user!.id;
 
-    const notice = await noticeService.createNotice(data, adminId);
+    await noticeService.createNotice(data, adminId);
 
     res.status(201).json({ message: '정상적으로 등록 처리되었습니다' });
   };
 
   getNoticeList = async (req: Request, res: Response) => {
     const query = create(req.query, noticeStruct.getNoticeList);
-    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3';
-    const boardId = '5bd33519-7a7d-4352-99d9-432144b3d6ce';
+    const userId = req.user!.id;
 
-    const noticeList = await noticeService.getNoticeList(query, userId, boardId);
+    const noticeList = await noticeService.getNoticeList(query, userId);
 
     res.status(200).json(noticeList);
   };
 
   getNoticeDetail = async (req: Request, res: Response) => {
     const noticeId = mask(req.params.noticeId, commonStruct.uuid);
-    const userId = 'c1b7eb1b-608b-41a1-a5ed-75c168baa1e3';
+    const userId = req.user!.id;
 
     const notice = await noticeService.getNoticeDetail(noticeId, userId);
 
@@ -34,20 +33,20 @@ class NoticeController {
   };
 
   updateNotice = async (req: Request, res: Response) => {
-    const data = create(req.body, noticeStruct.updateNotice);
+    const data = create(req.body, noticeStruct.noticeInfo);
     const noticeId = mask(req.params.noticeId, commonStruct.uuid);
+    const userId = req.user!.id;
 
-    const notice = await noticeService.updateNotice(data, noticeId);
+    const notice = await noticeService.updateNotice(data, noticeId, userId);
 
     res.status(201).json(notice);
   };
 
   deleteNotice = async (req: Request, res: Response) => {
     const noticeId = mask(req.params.noticeId, commonStruct.uuid);
-    const adminId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // admin 정보, 업데이트 필요
-    // const boardId = 'd4b4b700-2c46-4a0f-b7f7-7e1705b41546'; // board 정보, 업데이트 필요
+    const adminId = req.user!.id;
 
-    const notice = await noticeService.deleteNotice(noticeId, adminId);
+    await noticeService.deleteNotice(noticeId, adminId);
 
     res.status(201).json({ message: '정상적으로 삭제 처리되었습니다' });
   };

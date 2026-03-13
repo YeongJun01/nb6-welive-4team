@@ -1,7 +1,7 @@
 import * as s from 'superstruct';
 import commonStruct from '../../structs/common.validation';
 
-const createNotice = s.object({
+const noticeInfo = s.object({
   category: s.enums([
     'MAINTENANCE',
     'EMERGENCY',
@@ -36,15 +36,7 @@ const getNoticeList = s.assign(
   }),
 );
 
-const updateNotice = s.assign(
-  createNotice,
-  s.object({
-    userId: commonStruct.uuid,
-  }),
-);
-
 export default {
-  createNotice,
+  noticeInfo,
   getNoticeList,
-  updateNotice,
 };

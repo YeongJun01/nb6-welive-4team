@@ -1,8 +1,11 @@
 import express from 'express';
 import { asyncHandler } from '../../middlewares/asyncHandler';
 import noticeController from './notice.controller';
+import { authMiddleware } from '../../middlewares/authMiddleware';
 
 const router = express.Router();
+
+router.use(authMiddleware);
 
 router.post('/', asyncHandler(noticeController.createNotice));
 router.get('/', asyncHandler(noticeController.getNoticeList));
