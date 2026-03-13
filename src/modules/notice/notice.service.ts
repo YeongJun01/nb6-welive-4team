@@ -71,6 +71,12 @@ class NoticeService {
       throw new BadRequestError('게시판 작성 권한이 없습니다');
     }
 
+    const today = new Date();
+
+    if (data.startDate && data.startDate < today) {
+      throw new BadRequestError('게시글 시작일은 오늘보다 과거일 수 없습니다');
+    }
+
     if (data.startDate && !data.endDate) {
       throw new BadRequestError('게시글 종료일을 입력해 주시기 바랍니다');
     }
@@ -79,7 +85,9 @@ class NoticeService {
       throw new BadRequestError('게시글 종료일이 시작일보다 빠를 수 없습니다');
     }
 
-    const notice = await noticeRepository.createNotice(data, adminId);
+    const eventData = data.startDate && data.endDate ? true : false;
+
+    const notice = await noticeRepository.createNotice({ ...data, eventData }, adminId);
     return notice;
   };
 
@@ -156,6 +164,12 @@ class NoticeService {
       throw new BadRequestError('Board 정보 확인 바랍니다');
     }
 
+    const today = new Date();
+
+    if (data.startDate && data.startDate < today) {
+      throw new BadRequestError('게시글 시작일은 오늘보다 과거일 수 없습니다');
+    }
+
     if (data.startDate && !data.endDate) {
       throw new BadRequestError('게시글 종료일을 입력해 주시기 바랍니다');
     }
@@ -163,6 +177,8 @@ class NoticeService {
     if (data.startDate && data.endDate && data.startDate >= data.endDate) {
       throw new BadRequestError('게시글 종료일이 시작일보다 빠를 수 없습니다');
     }
+
+    const isDate = data.startDate && data.endDate ? true : false;
 
     const changedData = {
       category: data.category,
@@ -173,7 +189,13 @@ class NoticeService {
       isPinned: data.isPinned,
     };
 
-    const updatedNotice = await noticeRepository.updateNotice(changedData, noticeId);
+    const updatedNotice = await noticeRepository.updateNotice(
+      changedData,
+      noticeId,
+      admin.id,
+      isDate,
+    );
+
     const notice = this.mapNoticeData(updatedNotice);
     return notice;
   };
@@ -194,7 +216,7 @@ class NoticeService {
       throw new BadRequestError('사용자 정보를 찾을 수 없습니다');
     }
 
-    const deletedNotice = await noticeRepository.deleteNotice(noticeId);
+    const deletedNotice = await noticeRepository.deleteNotice(noticeId, adminId);
     return deletedNotice;
   };
 }

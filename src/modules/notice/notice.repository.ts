@@ -31,6 +31,15 @@ class BoardRepo {
 
     return board;
   };
+
+  getEventInfo = async (noticeId: string, adminId: string) => {
+    return await prisma.event.findFirst({
+      where: {
+        noticeId,
+        adminId,
+      },
+    });
+  };
 }
 
 const boardRepo = new BoardRepo();
@@ -39,10 +48,19 @@ export { userRepo, boardRepo };
 
 class NoticeRepository {
   createNotice = async (data: any, adminId: string) => {
+    const { eventData, ...noticeData } = data;
     const notice = await prisma.notice.create({
       data: {
-        ...data,
+        ...noticeData,
         adminId,
+        events: eventData
+          ? {
+              create: {
+                adminId,
+                title: data.title,
+              },
+            }
+          : undefined,
       },
     });
 
@@ -95,6 +113,7 @@ class NoticeRepository {
       where: { id: noticeId },
       include: {
         board: true,
+        events: true,
       },
     });
   };
@@ -122,11 +141,15 @@ class NoticeRepository {
     });
   };
 
-  updateNotice = async (data: any, noticeId: string) => {
+  updateNotice = async (data: any, noticeId: string, adminId: string, isDate: boolean) => {
     const notice = await prisma.notice.update({
       where: { id: noticeId },
       data: {
         ...data,
+        events: {
+          deleteMany: {},
+          ...(isDate ? { create: { adminId, title: data.title } } : {}),
+        },
       },
       include: {
         admin: true,
@@ -141,11 +164,14 @@ class NoticeRepository {
     return notice;
   };
 
-  deleteNotice = async (noticeId: string) => {
+  deleteNotice = async (noticeId: string, adminId: string) => {
     return await prisma.notice.update({
-      where: { id: noticeId },
+      where: { id: noticeId, adminId },
       data: {
         deletedAt: new Date(),
+        events: {
+          deleteMany: {},
+        },
       },
     });
   };
