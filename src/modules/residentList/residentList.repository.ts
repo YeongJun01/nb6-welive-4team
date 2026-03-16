@@ -73,12 +73,12 @@ export class ResidentListRepository {
 
   // 입주민 리소스 생성 (개별 등록)
   async createResident(apartmentId: string, data: CreateResidentDto) {
-    let isHouseholder;
-    if (data.isHouseholder === IsHouseholder.HOUSEHOLDER) {
-      isHouseholder = true;
-    } else {
-      isHouseholder = false;
-    }
+    // let isHouseholder;
+    // if (data.isHouseholder === IsHouseholder.HOUSEHOLDER) {
+    //   isHouseholder = true;
+    // } else {
+    //   isHouseholder = false;
+    // }
 
     return await this.prisma.residentList.create({
       data: {
@@ -87,7 +87,7 @@ export class ResidentListRepository {
         apartmentHo: data.unitNumber,
         contact: data.contact,
         name: data.name,
-        isHouseholder,
+        isHouseholder: data.isHouseholder === IsHouseholder.HOUSEHOLDER,
       },
     });
   }
@@ -155,6 +155,44 @@ export class ResidentListRepository {
       where: { id },
       data: {
         deletedAt: new Date(),
+      },
+    });
+  }
+
+  // 입주민 정보 여러개 생성 (csv)
+  async createManyResidents(apartmentId: string, data: CreateResidentDto[]) {
+    const residents = data.map((resident) => ({
+      apartmentId,
+      apartmentDong: resident.building,
+      apartmentHo: resident.unitNumber,
+      contact: resident.contact,
+      name: resident.name,
+      isHouseholder: resident.isHouseholder === IsHouseholder.HOUSEHOLDER,
+    }));
+
+    return await this.prisma.residentList.createMany({
+      data: residents,
+      skipDuplicates: true,
+    });
+  }
+
+  // db에 있는 세대주 조회
+  async findHouseholdersByAddresses(
+    apartmentId: string,
+    addresses: { building: string; unitNumber: string }[],
+  ) {
+    return this.prisma.residentList.findMany({
+      where: {
+        apartmentId,
+        isHouseholder: true,
+        OR: addresses.map((a) => ({
+          apartmentDong: a.building,
+          apartmentHo: a.unitNumber,
+        })),
+      },
+      select: {
+        apartmentDong: true,
+        apartmentHo: true,
       },
     });
   }
