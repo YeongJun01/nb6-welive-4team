@@ -23,9 +23,17 @@ class UserRepo {
 const userRepo = new UserRepo();
 
 class BoardRepo {
-  getBoardInfo = async (id: string) => {
+  getBoardWithId = async (boardId: string) => {
     const board = await prisma.board.findUnique({
-      where: { id },
+      where: { id: boardId },
+    });
+
+    return board;
+  };
+
+  getBoardInfoWithApartmentId = async (apartmentId: string) => {
+    const board = await prisma.board.findFirst({
+      where: { apartmentId, boardType: 'COMPLAINT' },
     });
 
     return board;
@@ -47,26 +55,48 @@ class ComplaintRepository {
     });
   };
 
-  getComplaintList = async (
-    query: any,
-    boardId: string,
-    userId: string | undefined = undefined,
-  ) => {
+  getComplaintList = async (query: any, boardId: string, role: string, userId: string) => {
     const getComplaintFilter: any = {
       boardId,
-      creatorId: userId, // userId가 있으면 본인 것만 조회
       status: query.status === 'ALL' ? undefined : query.status,
-      isPublic: query.isPublic,
       apartmentDong: query.dong === '' ? undefined : query.dong,
       apartmentHo: query.ho === '' ? undefined : query.ho,
       deletedAt: null,
     };
 
+    // 역할별 조회 권한 로직
+    if (role === 'USER') {
+      if (query.isPublic === true) {
+        // 공개된 글만 조회
+        getComplaintFilter.isPublic = true;
+      } else if (query.isPublic === false) {
+        // 본인이 작성한 비공개 글만 조회
+        getComplaintFilter.isPublic = false;
+        getComplaintFilter.creatorId = userId;
+      } else {
+        // 전체 조회: 공개된 글 OR 본인이 작성한 글
+        getComplaintFilter.OR = [{ isPublic: true }, { creatorId: userId }];
+      }
+    } else {
+      // 관리자: 모든 글 조회 가능
+      if (query.isPublic !== undefined) {
+        getComplaintFilter.isPublic = query.isPublic;
+      }
+    }
+
+    // 키워드가 있는 경우, 역할 권한에 키워드 추가
     if (query.keyword) {
-      getComplaintFilter.OR = [
+      const keywordFilter = [
         { title: { contains: query.keyword, mode: 'insensitive' } },
         { content: { contains: query.keyword, mode: 'insensitive' } },
       ];
+
+      if (getComplaintFilter.OR) {
+        getComplaintFilter.AND = [{ OR: getComplaintFilter.OR }, { OR: keywordFilter }];
+        delete getComplaintFilter.OR;
+      } else {
+        getComplaintFilter.OR = keywordFilter;
+      }
     }
 
     const [complaintList, totalCount] = await Promise.all([
