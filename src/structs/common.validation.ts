@@ -11,6 +11,8 @@ const boolean = s.coerce(s.boolean(), s.string(), (value) => {
   return value;
 });
 
+const date = s.coerce(s.date(), s.string(), (value) => new Date(value));
+
 const stringArray = s.coerce(
   s.array(s.string()),
   s.union([s.string(), s.array(s.string())]),
@@ -19,8 +21,7 @@ const stringArray = s.coerce(
 
 const pagination = s.object({
   page: s.defaulted(number, 1),
-  limit: s.defaulted(number, 10),
-  keyword: s.optional(s.string()),
+  limit: s.defaulted(number, 11),
   orderBy: s.defaulted(s.enums(['oldest', 'newest']), 'newest'),
 });
 
@@ -28,6 +29,7 @@ export default {
   uuid,
   number,
   boolean,
+  date,
   stringArray,
   pagination,
 };

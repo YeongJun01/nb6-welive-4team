@@ -49,4 +49,48 @@ export class UserRepository {
       where: { role, joinStatus: Status.REJECTED },
     });
   }
+
+  /**
+   * 6. 특정 권한의 계정들 가입 상태 일괄 변경
+   */
+  async updateManyJoinStatus(role: User['role'], status: Status) {
+    return await this.prisma.user.updateMany({
+      where: { role },
+      data: { joinStatus: status },
+    });
+  }
+
+  /**
+   * 7. 단일 유저 소프트 삭제 (deletedAt 설정)
+   */
+  async softDeleteUser(userId: User['id']) {
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  /**
+   * 8. 아파트 존재 여부 확인
+   */
+  async findApartmentById(apartmentId: string) {
+    return await this.prisma.apartment.findUnique({
+      where: { id: apartmentId },
+    });
+  }
+
+  /**
+   * 9. 로그인용 유저 상세 조회 (apartment, boards, residentList 포함)
+   */
+  async findUserWithDetails(where: Prisma.UserWhereUniqueInput) {
+    return await this.prisma.user.findUnique({
+      where,
+      include: {
+        apartment: {
+          include: { boards: true },
+        },
+        residentLists: true,
+      },
+    });
+  }
 }

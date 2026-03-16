@@ -1,19 +1,9 @@
-import { User, ResidentList } from '@prisma/client';
+import { Infer } from 'superstruct';
+import userStruct from './user.validation';
 
-export interface SignUpDto {
-  username: User['username'];
-  password: User['password'];
-  contact: User['contact'];
-  name: User['name'];
-  email: User['email'];
-  avatar: User['avatar'];
-  role: User['role'];
-  apartmentId: ResidentList['apartmentId'];
-  apartmentDong: ResidentList['apartmentDong'];
-  apartmentHo: ResidentList['apartmentHo'];
-}
+export type SignUpDto = Infer<typeof userStruct.signUp>;
 
 export interface UpdatePasswordDto {
-  currentPassword: User['password'];
-  newPassword: User['password'];
+  currentPassword: string;
+  newPassword: string;
 }
