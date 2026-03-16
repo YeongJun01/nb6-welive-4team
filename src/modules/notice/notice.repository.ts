@@ -24,6 +24,14 @@ class UserRepo {
 
 const userRepo = new UserRepo();
 class BoardRepo {
+  getBoardId = async (boardId: string) => {
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+    });
+
+    return board;
+  };
+
   getBoardInfo = async (apartmentId: string) => {
     const board = await prisma.board.findFirst({
       where: { apartmentId, boardType: 'NOTICE' },

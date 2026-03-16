@@ -59,7 +59,7 @@ class NoticeService {
     }
 
     // 게시판 정보, 타입, 게시 권한 확인
-    const board = await boardRepo.getBoardInfo(data.boardId);
+    const board = await boardRepo.getBoardId(data.boardId);
     if (!board) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
     }
@@ -139,7 +139,7 @@ class NoticeService {
       throw new NotFoundError('사용자 정보를 찾을 수 없습니다');
     }
 
-    if (noticeInfo.board.apartmentId !== user.residentLists?.apartmentId) {
+    if (noticeInfo.board.apartmentId !== user.apartmentId) {
       throw new ForbiddenError('게시글 조회 권한이 없습니다');
     }
 
