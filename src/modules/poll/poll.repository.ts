@@ -234,6 +234,43 @@ class PollRepository {
       });
     });
   };
+
+  // 시간에 따른 투표 상태 벌크 업데이트
+  updatePollStatusByTime = async () => {
+    const now = new Date();
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. UPCOMING -> CLOSED (시스템 에러등에 의해 시작 없이 종료 된 경우)
+      const instantClosedUpdates = await tx.poll.updateMany({
+        where: {
+          status: 'UPCOMING',
+          endDate: { lte: now }, // 이미 끝남!
+          deletedAt: null,
+        },
+        data: { status: 'CLOSED' },
+      });
+      // 2. UPCOMING -> ONGOING (투표가 시작되고 아직 종료되지 않은 경우)
+      const startUpdates = await tx.poll.updateMany({
+        where: {
+          status: 'UPCOMING',
+          startDate: { lte: now },
+          endDate: { gt: now }, // 아직 미래여야 함!
+          deletedAt: null,
+        },
+        data: { status: 'ONGOING' },
+      });
+      // 3. ONGOING -> CLOSED (정상적으로 진행하다가 종료 된 경우)
+      const endUpdates = await tx.poll.updateMany({
+        where: {
+          status: 'ONGOING',
+          endDate: { lte: now },
+          deletedAt: null,
+        },
+        data: { status: 'CLOSED' },
+      });
+      return { instantClosedUpdates, startUpdates, endUpdates };
+    });
+  };
 }
 
 const pollRepository = new PollRepository();

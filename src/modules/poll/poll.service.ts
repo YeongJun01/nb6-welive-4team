@@ -2,6 +2,7 @@ import { Infer } from 'superstruct';
 import pollStruct from './poll.validation';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
 import pollRepository, { userRepo, boardRepo } from './poll.repository';
+import cron from 'node-cron';
 
 type Poll = Infer<typeof pollStruct.pollInformation>;
 
@@ -285,6 +286,32 @@ class PollService {
     }
 
     await pollRepository.deletePoll(pollId);
+  };
+
+  // 투표 상태 자동 변경
+  autoChangePollStatus = async () => {
+    // 10분마다 실행 (*/10 * * * *)
+    // 시스템 오차를 위하여 5초 단위 추가
+    // 00분 5초 , 10분 5초 , 20분 5초 ... 단위로 실행
+    cron.schedule('5 */10 * * * *', async () => {
+      try {
+        const { instantClosedUpdates, startUpdates, endUpdates } =
+          await pollRepository.updatePollStatusByTime();
+        console.log(`🔃 [Cron] 투표 상태 업데이트 완료`);
+
+        if (instantClosedUpdates.count > 0 || startUpdates.count > 0 || endUpdates.count > 0) {
+          if (startUpdates.count > 0) console.log(`- 투표 시작: ${startUpdates.count}건`);
+          if (endUpdates.count > 0) console.log(`- 투표 종료: ${endUpdates.count}건`);
+          if (instantClosedUpdates.count > 0)
+            console.log(`- 투표 즉시 종료(시간 초과): ${instantClosedUpdates.count}건`);
+        }
+      } catch (error) {
+        // 특정 요청 없이 크론 자동 실행 => next(error) 사용 불가
+        console.error('❌ [Cron] Error updating poll status:', error);
+      }
+    });
+
+    console.log('🚀 [Cron] Poll status auto-updater 📅');
   };
 }
 
