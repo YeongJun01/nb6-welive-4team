@@ -1,19 +1,22 @@
-import { Request, Response } from 'express';
 import voteRepository from './vote.repository';
 import { userRepo } from '../poll/poll.repository';
 import prisma from '../../lib/prisma';
-import { BadRequestError } from '../../lib/errors';
+import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
 
 class VoteService {
   private validateVoteAbility = async (optionId: string, userId: string) => {
     // 투표 자체에 대한 정보 검증
-    const pollDetail = await voteRepository.getPollInfo(optionId);
+    const pollDetail = await voteRepository.getPollByOptionId(optionId);
 
     if (!pollDetail) {
-      throw new BadRequestError('존재하지 않는 투표입니다.');
+      throw new NotFoundError('존재하지 않는 투표입니다.');
     }
 
-    if (pollDetail.poll.status !== 'ONGOING' || pollDetail.poll.endDate < new Date()) {
+    if (
+      pollDetail.poll.status !== 'ONGOING' ||
+      pollDetail.poll.startDate > new Date() ||
+      pollDetail.poll.endDate < new Date()
+    ) {
       throw new BadRequestError('투표가 진행중이 아닙니다.');
     }
 
@@ -21,13 +24,11 @@ class VoteService {
     const user = await userRepo.getUserInfo(userId);
 
     if (!user) {
-      throw new BadRequestError('존재하지 않는 사용자입니다.');
+      throw new NotFoundError('사용자 정보를 찾을 수 없습니다');
     }
 
-    if (user.role !== 'USER') {
-      // || user.boardId.pollId !== pollDetail.poll.boardId
-      // user 로그인 작업 후 추가 설정 필요
-      throw new BadRequestError('투표 권한이 없습니다.');
+    if (user.role !== 'USER' || user.apartmentId !== pollDetail.poll.board.apartmentId) {
+      throw new ForbiddenError('투표 권한이 없습니다.');
     }
 
     return pollDetail;
@@ -46,7 +47,7 @@ class VoteService {
     const pollVote = await prisma.$transaction(async (tx: any) => {
       await voteRepository.createVote(pollDetail.pollId, optionId, userId, tx);
       await voteRepository.updateVoteCount(pollDetail.pollId, optionId, tx);
-      return await voteRepository.getPollInfo(optionId, tx);
+      return await voteRepository.getPollByOptionId(optionId, tx);
     });
 
     return pollVote;
@@ -65,7 +66,7 @@ class VoteService {
     const pollVote = await prisma.$transaction(async (tx: any) => {
       await voteRepository.deleteVote(pollDetail.pollId, userId, tx);
       await voteRepository.updateVoteCount(pollDetail.pollId, optionId, tx);
-      return await voteRepository.getPollInfo(optionId, tx);
+      return await voteRepository.getPollByOptionId(optionId, tx);
     });
 
     return pollVote;

@@ -7,8 +7,8 @@ class VoteController {
   // 입주민 투표 처리
   createVote = async (req: Request, res: Response) => {
     const optionId = mask(req.params.optionId, commonStruct.uuid);
-    const userId = 'ec093420-784b-4919-af81-01a1389ad582'; // 임시 정보
-    // const userId = mask(req.user?.id, commonStruct.uuid);
+    const userId = req.user!.id;
+
     await voteService.createVote(optionId, userId);
     res.status(201).json({ message: '정상적으로 투표 되었습니다' });
   };
@@ -16,8 +16,8 @@ class VoteController {
   // 입주민 투표 취소
   deleteVote = async (req: Request, res: Response) => {
     const optionId = mask(req.params.optionId, commonStruct.uuid);
-    const userId = 'ec093420-784b-4919-af81-01a1389ad582'; // 임시 정보
-    // const userId = mask(req.user?.id, commonStruct.uuid);
+    const userId = req.user!.id;
+
     await voteService.deleteVote(optionId, userId);
     res.status(201).json({ message: '정상적으로 투표가 취소되었습니다' });
   };
