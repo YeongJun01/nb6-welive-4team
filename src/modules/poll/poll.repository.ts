@@ -36,7 +36,27 @@ class UserRepo {
 
 const userRepo = new UserRepo();
 
-export { userRepo };
+class BoardRepo {
+  getBoardById = async (boardId: string) => {
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+    });
+
+    return board;
+  };
+
+  getBoardInfoByApartmentId = async (apartmentId: string) => {
+    const board = await prisma.board.findFirst({
+      where: { apartmentId, boardType: 'POLL' },
+    });
+
+    return board;
+  };
+}
+
+const boardRepo = new BoardRepo();
+
+export { userRepo, boardRepo };
 
 class PollRepository {
   // 투표 생성
@@ -50,23 +70,19 @@ class PollRepository {
           ...pollData,
           adminId,
           description: content,
-        },
-      });
-
-      // 투표 옵션 생성
-      await db.pollOption.createMany({
-        data: options.map((option: any) => ({
-          pollId: newPoll.id,
-          content: option.title,
-        })),
-      });
-
-      // 투표 연관 event 생성
-      await db.event.create({
-        data: {
-          adminId,
-          pollId: newPoll.id,
-          title: newPoll.title,
+          pollOptions: {
+            // 투표 옵션 생성
+            create: options.map((option: any) => ({
+              content: option.title,
+            })),
+          },
+          events: {
+            // 이벤트 생성
+            create: {
+              adminId,
+              title: data.title,
+            },
+          },
         },
       });
 
@@ -81,13 +97,10 @@ class PollRepository {
     // 투표 목록 조회 필터링
     const getPollFilter: any = {
       boardId,
-      // buildingPermission: {
-      //   hasSome: query.buildingPermission,
-      // },
       buildingPermission: query.buildingPermission
         ? { hasSome: query.buildingPermission }
         : undefined,
-      status: query.status === 'ALL' ? undefined : query.status,
+      status: query.status ? query.status : undefined,
       deletedAt: null,
     };
 
@@ -128,6 +141,7 @@ class PollRepository {
       },
       include: {
         admin: { select: { name: true } },
+        board: true,
         pollOptions: {
           select: {
             id: true,
@@ -218,6 +232,43 @@ class PollRepository {
           AND: [{ adminId: deletedPoll.adminId }, { pollId: deletedPoll.id }],
         },
       });
+    });
+  };
+
+  // 시간에 따른 투표 상태 벌크 업데이트
+  updatePollStatusByTime = async () => {
+    const now = new Date();
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. UPCOMING -> CLOSED (시스템 에러등에 의해 시작 없이 종료 된 경우)
+      const instantClosedUpdates = await tx.poll.updateMany({
+        where: {
+          status: 'UPCOMING',
+          endDate: { lte: now }, // 이미 끝남!
+          deletedAt: null,
+        },
+        data: { status: 'CLOSED' },
+      });
+      // 2. UPCOMING -> ONGOING (투표가 시작되고 아직 종료되지 않은 경우)
+      const startUpdates = await tx.poll.updateMany({
+        where: {
+          status: 'UPCOMING',
+          startDate: { lte: now },
+          endDate: { gt: now }, // 아직 미래여야 함!
+          deletedAt: null,
+        },
+        data: { status: 'ONGOING' },
+      });
+      // 3. ONGOING -> CLOSED (정상적으로 진행하다가 종료 된 경우)
+      const endUpdates = await tx.poll.updateMany({
+        where: {
+          status: 'ONGOING',
+          endDate: { lte: now },
+          deletedAt: null,
+        },
+        data: { status: 'CLOSED' },
+      });
+      return { instantClosedUpdates, startUpdates, endUpdates };
     });
   };
 }
