@@ -163,7 +163,7 @@ class NoticeService {
     }
 
     if (noticeInfo.adminId !== admin.id) {
-      throw new ForbiddenError('게시글 수정 권한이 없습니다');
+      throw new ForbiddenError('공지사항 수정 권한이 없습니다');
     }
 
     // 공지 기간 유효 범위 확인
@@ -209,7 +209,7 @@ class NoticeService {
     // 공지사항 정보 조회 및 확인
     const noticeInfo = await noticeRepository.getNoticeById(noticeId);
     if (!noticeInfo) {
-      throw new NotFoundError('게시글 정보를 찾을 수 없습니다');
+      throw new NotFoundError('존재하지 않는 공지사항 입니다.');
     }
 
     // 관리자 정보 조회 및 확인
@@ -219,7 +219,7 @@ class NoticeService {
     }
 
     if (noticeInfo.adminId !== admin.id) {
-      throw new ForbiddenError('게시글 삭제 권한이 없습니다');
+      throw new ForbiddenError('공지사항 삭제 권한이 없습니다');
     }
 
     const deletedNotice = await noticeRepository.deleteNotice(noticeId, adminId);
