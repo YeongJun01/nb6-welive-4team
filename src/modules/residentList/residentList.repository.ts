@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma, ResidentList } from '@prisma/client';
 import { CreateResidentDto, IsHouseholder } from './residentList.dto';
+import { SignUpDto } from '../user/user.dto';
 
 export class ResidentListRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -73,12 +74,12 @@ export class ResidentListRepository {
 
   // 입주민 리소스 생성 (개별 등록)
   async createResident(apartmentId: string, data: CreateResidentDto) {
-    let isHouseholder;
-    if (data.isHouseholder === IsHouseholder.HOUSEHOLDER) {
-      isHouseholder = true;
-    } else {
-      isHouseholder = false;
-    }
+    // let isHouseholder;
+    // if (data.isHouseholder === IsHouseholder.HOUSEHOLDER) {
+    //   isHouseholder = true;
+    // } else {
+    //   isHouseholder = false;
+    // }
 
     return await this.prisma.residentList.create({
       data: {
@@ -87,7 +88,7 @@ export class ResidentListRepository {
         apartmentHo: data.unitNumber,
         contact: data.contact,
         name: data.name,
-        isHouseholder,
+        isHouseholder: data.isHouseholder === IsHouseholder.HOUSEHOLDER,
       },
     });
   }
@@ -110,9 +111,6 @@ export class ResidentListRepository {
       },
     });
   }
-
-  // 사용자로부터 입주민 명부 생성 (가입시 호출되는 듯)
-  async createResidentFromUser(userId: string, data: CreateResidentDto) {}
 
   // 입주민 상세 조회
   async getResidentById(id: string) {
@@ -159,11 +157,64 @@ export class ResidentListRepository {
     });
   }
 
+  // 입주민 정보 여러개 생성 (csv)
+  async createManyResidents(apartmentId: string, data: CreateResidentDto[]) {
+    const residents = data.map((resident) => ({
+      apartmentId,
+      apartmentDong: resident.building,
+      apartmentHo: resident.unitNumber,
+      contact: resident.contact,
+      name: resident.name,
+      isHouseholder: resident.isHouseholder === IsHouseholder.HOUSEHOLDER,
+    }));
+
+    return await this.prisma.residentList.createMany({
+      data: residents,
+      skipDuplicates: true,
+    });
+  }
+
+  // db에 있는 세대주 조회
+  async findHouseholdersByAddresses(
+    apartmentId: string,
+    addresses: { building: string; unitNumber: string }[],
+  ) {
+    return this.prisma.residentList.findMany({
+      where: {
+        apartmentId,
+        isHouseholder: true,
+        OR: addresses.map((a) => ({
+          apartmentDong: a.building,
+          apartmentHo: a.unitNumber,
+        })),
+      },
+      select: {
+        apartmentDong: true,
+        apartmentHo: true,
+      },
+    });
+  }
   // 입주민 명부에 userId 연결 (회원가입 자동 승인 시 호출)
   async updateResidentUserId(residentId: ResidentList['id'], userId: string) {
     return await this.prisma.residentList.update({
       where: { id: residentId },
       data: { userId },
+    });
+  }
+
+  // 회원가입 정보로 입주자 등록
+  async createResidentFromSignUp(userId: string, data: SignUpDto) {
+    return this.prisma.residentList.create({
+      data: {
+        apartmentId: data.apartmentId!,
+        apartmentDong: data.apartmentDong!,
+        apartmentHo: data.apartmentHo!,
+        name: data.name,
+        contact: data.contact,
+        email: data.email,
+        userId,
+        isHouseholder: true,
+      },
     });
   }
 }

@@ -7,6 +7,7 @@ import { authMiddleware } from '../../middlewares/authMiddleware';
 import prisma from '../../lib/prisma';
 import { Router } from 'express';
 import { asyncHandler } from '../../middlewares/asyncHandler';
+import { uploadCsv } from '../../middlewares/upload';
 
 const router = Router();
 router.use(authMiddleware);
@@ -21,6 +22,23 @@ router
   .route('/')
   .get(asyncHandler(residentListController.getResidentsList.bind(residentListController)))
   .post(asyncHandler(residentListController.createResident.bind(residentListController)));
+
+router
+  .route('/from-file')
+  .post(
+    uploadCsv,
+    asyncHandler(residentListController.uploadResidentsByCsv.bind(residentListController)),
+  );
+
+router
+  .route('/file/template')
+  .get(
+    asyncHandler(residentListController.downloadResidentCsvTemplate.bind(residentListController)),
+  );
+
+router
+  .route('/file')
+  .get(asyncHandler(residentListController.downloadResidentsCsv.bind(residentListController)));
 
 router
   .route('/:id')
