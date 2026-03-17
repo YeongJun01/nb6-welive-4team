@@ -13,6 +13,7 @@ import voteRouter from './modules/vote/vote.router';
 import complaintRouter from './modules/complaint/complaint.router';
 import noticeRouter from './modules/notice/notice.router';
 import notificationRouter from './modules/notification/notification.router';
+import eventRouter from './modules/event/event.router';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/options', voteRouter); // 투표 옵션
 app.use('/complaints', complaintRouter); // 민원 게시판
 app.use('/notices', noticeRouter); // 공지 게시판
 app.use('/notifications', notificationRouter); // 알림
+app.use('/events', eventRouter); // 이벤트 게시판
 
 // 아파트 관련 라우터
 app.use('/apartments', apartmentRouter);
