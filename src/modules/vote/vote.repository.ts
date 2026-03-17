@@ -2,13 +2,17 @@ import { Request, Response } from 'express';
 import prisma from '../../lib/prisma';
 
 class VoteRepository {
-  getPollInfo = async (optionId: string, tx = prisma) => {
+  getPollByOptionId = async (optionId: string, tx = prisma) => {
     return await tx.pollOption.findUnique({
       where: {
         id: optionId,
       },
       include: {
-        poll: true,
+        poll: {
+          include: {
+            board: true,
+          },
+        },
       },
     });
   };

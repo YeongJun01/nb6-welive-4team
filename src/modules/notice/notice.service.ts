@@ -59,13 +59,13 @@ class NoticeService {
     }
 
     // 게시판 정보, 타입, 게시 권한 확인
-    const board = await boardRepo.getBoardId(data.boardId);
+    const board = await boardRepo.getBoardById(data.boardId);
     if (!board) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
     }
 
     if (board.boardType !== 'NOTICE') {
-      throw new BadRequestError('게시판 타입을 확인 바랍니다');
+      throw new BadRequestError('공지사항 게시판이 아닙니다');
     }
 
     if (board.adminId !== adminId) {
@@ -106,18 +106,13 @@ class NoticeService {
       throw new NotFoundError('사용자 정보를 찾을 수 없습니다');
     }
 
-    const apartmentId = user.apartmentId;
-    if (!apartmentId) {
-      throw new NotFoundError('아파트 정보를 찾을 수 없습니다');
-    }
-
-    const noticeId = await boardRepo.getBoardInfo(apartmentId);
-    if (!noticeId) {
+    const noticeBoard = await boardRepo.getBoardInfoByApartmentId(user.apartmentId!);
+    if (!noticeBoard) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
     }
 
     // 공지사항 목록 조회
-    const noticeList = await noticeRepository.getNoticeList({ ...query, orderBy }, noticeId.id);
+    const noticeList = await noticeRepository.getNoticeList({ ...query, orderBy }, noticeBoard.id);
 
     return {
       notices: noticeList.noticeList.map((notice: any) => this.mapNoticeData(notice)),
@@ -127,10 +122,10 @@ class NoticeService {
 
   getNoticeDetail = async (noticeId: string, userId: string) => {
     // 공지사항 정보 조회 및 확인
-    const noticeInfo = await noticeRepository.getNoticeDetail(noticeId);
+    const noticeInfo = await noticeRepository.getNoticeById(noticeId);
 
     if (!noticeInfo) {
-      throw new NotFoundError('게시글 정보를 찾을 수 없습니다');
+      throw new NotFoundError('존재하지 않는 공지사항 입니다.');
     }
 
     // 유저 정보 조회 및 정보 확인
@@ -140,7 +135,7 @@ class NoticeService {
     }
 
     if (noticeInfo.board.apartmentId !== user.apartmentId) {
-      throw new ForbiddenError('게시글 조회 권한이 없습니다');
+      throw new ForbiddenError('공지사항 조회 권한이 없습니다');
     }
 
     // 조회수 추가 및 공지사항 제공 정보 가공
@@ -151,10 +146,10 @@ class NoticeService {
 
   updateNotice = async (data: Notice, noticeId: string, userId: string) => {
     // 공지사항 정보 조회 및 확인
-    const noticeInfo = await noticeRepository.getNoticeDetail(noticeId);
+    const noticeInfo = await noticeRepository.getNoticeById(noticeId);
 
     if (!noticeInfo) {
-      throw new NotFoundError('게시글 정보를 찾을 수 없습니다');
+      throw new NotFoundError('존재하지 않는 공지사항 입니다.');
     }
 
     if (noticeInfo.boardId !== data.boardId) {
@@ -168,7 +163,7 @@ class NoticeService {
     }
 
     if (noticeInfo.adminId !== admin.id) {
-      throw new ForbiddenError('게시글 수정 권한이 없습니다');
+      throw new ForbiddenError('공지사항 수정 권한이 없습니다');
     }
 
     // 공지 기간 유효 범위 확인
@@ -211,19 +206,20 @@ class NoticeService {
   };
 
   deleteNotice = async (noticeId: string, adminId: string) => {
-    const noticeInfo = await noticeRepository.getNoticeDetail(noticeId);
+    // 공지사항 정보 조회 및 확인
+    const noticeInfo = await noticeRepository.getNoticeById(noticeId);
     if (!noticeInfo) {
-      throw new NotFoundError('게시글 정보를 찾을 수 없습니다');
+      throw new NotFoundError('존재하지 않는 공지사항 입니다.');
     }
 
-    if (noticeInfo.adminId !== adminId) {
-      throw new ForbiddenError('게시글 삭제 권한이 없습니다');
-    }
-
+    // 관리자 정보 조회 및 확인
     const admin = await userRepo.getUserInfo(adminId);
-
     if (!admin) {
       throw new NotFoundError('사용자 정보를 찾을 수 없습니다');
+    }
+
+    if (noticeInfo.adminId !== admin.id) {
+      throw new ForbiddenError('공지사항 삭제 권한이 없습니다');
     }
 
     const deletedNotice = await noticeRepository.deleteNotice(noticeId, adminId);

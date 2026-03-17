@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma, ResidentList } from '@prisma/client';
 import { CreateResidentDto, IsHouseholder } from './residentList.dto';
+import { SignUpDto } from '../user/user.dto';
 
 export class ResidentListRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -111,9 +112,6 @@ export class ResidentListRepository {
     });
   }
 
-  // 사용자로부터 입주민 명부 생성 (가입시 호출되는 듯)
-  async createResidentFromUser(userId: string, data: CreateResidentDto) {}
-
   // 입주민 상세 조회
   async getResidentById(id: string) {
     return await this.prisma.residentList.findUnique({
@@ -201,6 +199,22 @@ export class ResidentListRepository {
     return await this.prisma.residentList.update({
       where: { id: residentId },
       data: { userId },
+    });
+  }
+
+  // 회원가입 정보로 입주자 등록
+  async createResidentFromSignUp(userId: string, data: SignUpDto) {
+    return this.prisma.residentList.create({
+      data: {
+        apartmentId: data.apartmentId!,
+        apartmentDong: data.apartmentDong!,
+        apartmentHo: data.apartmentHo!,
+        name: data.name,
+        contact: data.contact,
+        email: data.email,
+        userId,
+        isHouseholder: true,
+      },
     });
   }
 }

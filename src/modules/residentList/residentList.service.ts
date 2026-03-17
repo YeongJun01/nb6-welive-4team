@@ -5,6 +5,7 @@ import { CreateResidentDto, IsHouseholder, ResidentStatus } from './residentList
 import { ResidentListRepository } from './residentList.repository';
 import { parseCsv } from './parseCsv';
 import fs from 'fs/promises';
+import { SignUpDto } from '../user/user.dto';
 
 export class ResidentListService {
   constructor(
@@ -100,35 +101,34 @@ export class ResidentListService {
     };
   }
 
-  // 사용자로부터 입주민 명부 생성 -- 보류
-  async createResidentFromUser(userId: string, adminId: string) {
-    // 유저 추출
-    const user = await this.userRepository.findUserByUnique({ id: userId });
-    // 유저 검증
-    if (!user) {
-      throw new NotFoundError('사용자를 찾을 수 없습니다.');
+  // 회원가입 데이터로 명부 생성
+  // /residents/from-user/{userId} 엔드포인트 사용 안 함 -> 로직에서 바로 함수 사용
+  async createResidentFromSignUp(userId: string, data: SignUpDto) {
+    if (!data.apartmentId) {
+      throw new BadRequestError('아파트 정보가 필요합니다.');
     }
 
-    // 관리자 추출
-    const admin = await this.userRepository.findUserByUnique({ id: adminId });
-    // 관리자 검증
-    if (!admin) {
-      throw new NotFoundError('관리자를 찾을 수 없습니다.');
+    if (!data.apartmentDong || !data.apartmentHo) {
+      throw new BadRequestError('동/호수 정보가 필요합니다.');
     }
 
-    const apartmentId = admin.apartmentId;
-    if (!apartmentId) {
-      throw new NotFoundError('사용자의 아파트 정보를 찾을 수 없습니다.');
-    }
+    // 이미 user.service에서 확인함
+    // const duplicate = await this.residentListRepository.findResidentByUnique({
+    //   apartmentId: data.apartmentId,
+    //   apartmentDong: data.apartmentDong!,
+    //   apartmentHo: data.apartmentHo!,
+    //   name: data.name,
+    //   contact: data.contact,
+    // });
 
-    // 유저의 아파트 추출
-    const userApt = await apartmentRepository.getApartmentById(apartmentId);
-    // 유저의 아파트 검증
-    if (!userApt) {
-      throw new NotFoundError('사용자의 아파트를 찾을 수 없습니다.');
-    }
+    // if (duplicate) {
+    //   if (!duplicate.userId) {
+    //     return await this.residentListRepository.updateResidentUserId(duplicate.id, userId);
+    //   }
+    //   return duplicate;
+    // }
 
-    // 입주자 생성
+    await this.residentListRepository.createResidentFromSignUp(userId, data);
   }
 
   // 입주민 상세 조회

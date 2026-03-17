@@ -14,8 +14,8 @@ const pollInformation = s.object({
   buildingPermission: s.array(s.string()),
   title: s.string(),
   content: s.string(),
-  startDate: s.string(),
-  endDate: s.string(),
+  startDate: commonStruct.date,
+  endDate: commonStruct.date,
   options: s.array(s.object({ title: s.string() })),
 });
 
@@ -24,7 +24,7 @@ const getPollList = s.assign(
   commonStruct.pagination,
   s.object({
     buildingPermission: s.optional(commonStruct.stringArray),
-    status: s.defaulted(s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED', 'ALL']), 'ALL'),
+    status: s.optional(s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED'])),
     keyword: s.optional(s.string()),
   }),
 );

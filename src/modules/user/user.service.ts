@@ -2,6 +2,7 @@ import { Prisma, Status, User } from '@prisma/client';
 import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
 import { UserRepository } from './';
 import { ResidentListRepository } from '../residentList/residentList.repository';
+import { ResidentListService } from '../residentList/residentList.service';
 import { SignUpDto, UpdatePasswordDto } from './user.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -9,6 +10,7 @@ export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly residentListRepository: ResidentListRepository,
+    private readonly residentListService: ResidentListService,
   ) {}
 
   /**
@@ -71,6 +73,8 @@ export class UserService {
     // 입주민 명부에 userId 연결
     if (matchedResidentId) {
       await this.residentListRepository.updateResidentUserId(matchedResidentId, newUser.id);
+    } else if (data.role === 'USER') {
+      await this.residentListService.createResidentFromSignUp(newUser.id, data);
     }
 
     return newUser;
