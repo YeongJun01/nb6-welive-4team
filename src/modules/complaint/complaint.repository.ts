@@ -46,12 +46,36 @@ export { userRepo, boardRepo };
 
 class ComplaintRepository {
   createComplaint = async (data: any, userInfo: any, adminId: string) => {
-    return await prisma.complaint.create({
-      data: {
-        ...data,
-        ...userInfo,
-        adminId,
-      },
+    await prisma.$transaction(async (tx) => {
+      const complaint = await tx.complaint.create({
+        data: {
+          ...data,
+          ...userInfo,
+          adminId,
+        },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: userInfo.createId,
+          notiType: 'COMPLAINT_RAISED',
+          title: data.title,
+          content: data.content,
+          url: `/complaints/${complaint.id}`,
+        },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: adminId,
+          notiType: 'COMPLAINT_RAISED',
+          title: data.title,
+          content: data.content,
+          url: `/complaints/${complaint.id}`,
+        },
+      });
+
+      return complaint;
     });
   };
 
