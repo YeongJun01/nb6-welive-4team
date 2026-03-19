@@ -89,7 +89,7 @@ class NoticeRepository {
       // 공지사항 생성 시 관리자에게 알림
       await this.notificationRepository.createNotification(tx, notiData, adminId);
 
-      // 공지사항 적용 입주민 확인 (보드에서 apartmentId 확인)
+      // 공지사항 적용 입주민 확인
       const apartmentMembers = await tx.user.findMany({
         where: {
           apartmentId: notice.board.apartmentId,
