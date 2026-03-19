@@ -1,5 +1,14 @@
 import prisma from '../../lib/prisma';
 
+import { Infer } from 'superstruct';
+import noticeStruct from './notice.validation';
+
+import { Prisma } from '@prisma/client';
+import { NotificationRepository } from '../notification/notification.repository';
+
+type noticeData = Infer<typeof noticeStruct.noticeInfo>;
+type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
+
 // User 검색용 레포지토리
 class UserRepo {
   getUserInfo = async (userId: string) => {
@@ -47,24 +56,57 @@ const boardRepo = new BoardRepo();
 export { userRepo, boardRepo };
 
 class NoticeRepository {
+  constructor(private readonly notificationRepository: NotificationRepository) {}
+
   createNotice = async (data: any, adminId: string) => {
     const { eventData, ...noticeData } = data;
-    const notice = await prisma.notice.create({
-      data: {
-        ...noticeData,
-        adminId,
-        events: eventData
-          ? {
-              create: {
-                adminId,
-                title: data.title,
-              },
-            }
-          : undefined,
-      },
-    });
+    return await prisma.$transaction(async (tx) => {
+      const notice = await prisma.notice.create({
+        data: {
+          ...noticeData,
+          adminId,
+          events: eventData
+            ? {
+                create: {
+                  adminId,
+                  title: data.title,
+                },
+              }
+            : undefined,
+        },
+        include: {
+          board: true,
+        },
+      });
 
-    return notice;
+      const notiData: notiData = {
+        notiType: 'NOTICE',
+        title: data.title,
+        content: data.content,
+        url: `/notice/${notice.id}`,
+      };
+
+      // 공지사항 생성 시 관리자에게 알림
+      await this.notificationRepository.createNotification(tx, notiData, adminId);
+
+      // 공지사항 적용 입주민 확인 (보드에서 apartmentId 확인)
+      const apartmentMembers = await tx.user.findMany({
+        where: {
+          apartmentId: notice.board.apartmentId,
+          role: 'USER',
+          deletedAt: null,
+        },
+      });
+
+      // 공지사항 생성 시 입주민에게 알림
+      await Promise.all(
+        apartmentMembers.map((member) =>
+          this.notificationRepository.createNotification(tx, notiData, member.id),
+        ),
+      );
+
+      return notice;
+    });
   };
 
   getNoticeList = async (query: any, boardId: string) => {
@@ -142,26 +184,54 @@ class NoticeRepository {
   };
 
   updateNotice = async (data: any, noticeId: string, adminId: string, isDate: boolean) => {
-    const notice = await prisma.notice.update({
-      where: { id: noticeId },
-      data: {
-        ...data,
-        events: {
-          deleteMany: {},
-          ...(isDate ? { create: { adminId, title: data.title } } : {}),
-        },
-      },
-      include: {
-        admin: true,
-        _count: {
-          select: {
-            comments: true,
+    return await prisma.$transaction(async (tx) => {
+      const notice = await tx.notice.update({
+        where: { id: noticeId },
+        data: {
+          ...data,
+          events: {
+            deleteMany: {},
+            ...(isDate ? { create: { adminId, title: data.title } } : {}),
           },
         },
-      },
-    });
+        include: {
+          board: true,
+          admin: true,
+          _count: {
+            select: {
+              comments: true,
+            },
+          },
+        },
+      });
 
-    return notice;
+      const notiData: notiData = {
+        notiType: 'NOTICE',
+        title: data.title,
+        content: data.content,
+        url: `/notice/${notice.id}`,
+      };
+
+      // 공지사항 수정 시 관리자에게 알림
+      await this.notificationRepository.createNotification(tx, notiData, adminId);
+
+      // 공지사항 수정 시 입주민에게 알림
+      const apartmentMembers = await tx.user.findMany({
+        where: {
+          apartmentId: notice.board.apartmentId,
+          role: 'USER',
+          deletedAt: null,
+        },
+      });
+
+      await Promise.all(
+        apartmentMembers.map((member) =>
+          this.notificationRepository.createNotification(tx, notiData, member.id),
+        ),
+      );
+
+      return notice;
+    });
   };
 
   deleteNotice = async (noticeId: string, adminId: string) => {
@@ -177,5 +247,6 @@ class NoticeRepository {
   };
 }
 
-const noticeRepository = new NoticeRepository();
+const notificationRepository = new NotificationRepository(prisma);
+const noticeRepository = new NoticeRepository(notificationRepository);
 export default noticeRepository;

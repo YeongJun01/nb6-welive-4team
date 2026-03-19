@@ -1,5 +1,4 @@
 import prisma from '../../lib/prisma';
-import { NotificationType } from '@prisma/client';
 
 import { Infer } from 'superstruct';
 import complaintStruct from './complaint.validation';
