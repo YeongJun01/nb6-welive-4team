@@ -1,9 +1,14 @@
 import prisma from '../../lib/prisma';
+import { NotificationType } from '@prisma/client';
 
 import { Infer } from 'superstruct';
 import complaintStruct from './complaint.validation';
 
+import { Prisma } from '@prisma/client';
+import { NotificationRepository } from '../notification/notification.repository';
+
 type status = Infer<typeof complaintStruct.complaintStatus>;
+type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
 
 class UserRepo {
   getUserInfo = async (userId: string) => {
@@ -45,8 +50,23 @@ const boardRepo = new BoardRepo();
 export { userRepo, boardRepo };
 
 class ComplaintRepository {
+  constructor(private readonly notificationRepository: NotificationRepository) {}
+
+  private notificationType = (status: string) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return 'COMPLAINT_IN_PROGRESS';
+      case 'RESOLVED':
+        return 'COMPLAINT_RESOLVED';
+      case 'REJECTED':
+        return 'COMPLAINT_REJECTED';
+      default:
+        return 'COMPLAINT_RAISED';
+    }
+  };
+
   createComplaint = async (data: any, userInfo: any, adminId: string) => {
-    await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
       const complaint = await tx.complaint.create({
         data: {
           ...data,
@@ -55,25 +75,15 @@ class ComplaintRepository {
         },
       });
 
-      await tx.notification.create({
-        data: {
-          userId: userInfo.createId,
-          notiType: 'COMPLAINT_RAISED',
-          title: data.title,
-          content: data.content,
-          url: `/complaints/${complaint.id}`,
-        },
-      });
+      const notiData: notiData = {
+        notiType: 'COMPLAINT_RAISED',
+        title: data.title,
+        content: data.content,
+        url: `/complaints/${complaint.id}`,
+      };
 
-      await tx.notification.create({
-        data: {
-          userId: adminId,
-          notiType: 'COMPLAINT_RAISED',
-          title: data.title,
-          content: data.content,
-          url: `/complaints/${complaint.id}`,
-        },
-      });
+      // 민원 생성시 관리자에게 알림
+      await this.notificationRepository.createNotification(tx, notiData, adminId);
 
       return complaint;
     });
@@ -232,31 +242,47 @@ class ComplaintRepository {
   };
 
   updateComplaintStatus = async (complaintId: string, data: status) => {
-    return await prisma.complaint.update({
-      where: { id: complaintId },
-      data: { status: data.status },
-      include: {
-        comments: {
-          include: {
-            user: {
-              select: {
-                name: true,
+    return await prisma.$transaction(async (tx) => {
+      const complaint = await tx.complaint.update({
+        where: { id: complaintId },
+        data: { status: data.status },
+        include: {
+          comments: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          creator: {
+            select: {
+              name: true,
+              residentLists: {
+                select: {
+                  apartmentDong: true,
+                  apartmentHo: true,
+                },
               },
             },
           },
         },
-        creator: {
-          select: {
-            name: true,
-            residentLists: {
-              select: {
-                apartmentDong: true,
-                apartmentHo: true,
-              },
-            },
-          },
-        },
-      },
+      });
+
+      // 민원 상태 변경시 사용자에게 알림
+      const notiTypeSetting = this.notificationType(complaint.status);
+
+      const notiData: notiData = {
+        notiType: notiTypeSetting,
+        title: complaint.title,
+        content: complaint.content,
+        url: `/complaints/${complaint.id}`,
+      };
+
+      await this.notificationRepository.createNotification(tx, notiData, complaint.creatorId);
+
+      return complaint;
     });
   };
 
@@ -270,5 +296,7 @@ class ComplaintRepository {
   };
 }
 
-const complaintRepository = new ComplaintRepository();
+const notificationRepository = new NotificationRepository(prisma);
+const complaintRepository = new ComplaintRepository(notificationRepository);
+
 export default complaintRepository;
