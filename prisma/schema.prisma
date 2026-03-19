@@ -211,7 +211,6 @@ model Vote {
   @@unique([pollId, userId])
 }
 
-// 마감된 투표는 공지에 자동 등록
 model Notice {
   id      String @id @default(uuid())
   boardId String // FK
@@ -362,10 +361,16 @@ enum BoardType {
 }
 
 enum NotificationType {
-  NOTICE //공지사항 등록 - 입주민
+  NOTICE //공지사항 등록 - 입주민, 관리자
+
   COMPLAINT_RAISED //민원 등록 - 관리자
+  COMPLAINT_IN_PROGRESS // 추가, 민원 처리중 - 입주민
   COMPLAINT_RESOLVED // 민원 처리 완료 - 입주민
+  COMPLAINT_REJECTED // 추가, 민원 반려 - 입주민
+
+  POLL_SET // 추가, 투표 등록 - 입주민, 관리자
   POLL_START // 투표 시작 - 입주민
   POLL_END // 투표 종료 - 입주민, (관리자?)
+
   SIGNUP_REQ // 입주민 회원가입 요청 - 관리자, 관리자 회원가입 요청 - 슈퍼 관리자
 }

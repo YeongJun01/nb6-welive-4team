@@ -2,6 +2,9 @@ import prisma from '../../lib/prisma';
 import { Infer } from 'superstruct';
 import pollStruct from './poll.validation';
 
+import { Prisma } from '@prisma/client';
+import { NotificationRepository } from '../notification/notification.repository';
+
 type DbPollStatus = 'UPCOMING' | 'ONGOING' | 'CLOSED';
 
 type Poll = Omit<Infer<typeof pollStruct.pollInformation>, 'status' | 'startDate' | 'endDate'> & {
@@ -11,6 +14,8 @@ type Poll = Omit<Infer<typeof pollStruct.pollInformation>, 'status' | 'startDate
 };
 
 type OrderBy = 'asc' | 'desc';
+
+type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
 
 // User 검색용 레포지토리
 class UserRepo {
@@ -59,13 +64,61 @@ const boardRepo = new BoardRepo();
 export { userRepo, boardRepo };
 
 class PollRepository {
+  constructor(private readonly notificationRepository: NotificationRepository) {}
+
+  // 아파트 입주민 조회 (권한 필터링 포함)
+  private getApartmentMembers = async (tx: any, poll: any) => {
+    const isAll = poll.buildingPermission.includes('ALL');
+    return await tx.residentList.findMany({
+      where: {
+        apartmentId: poll.board.apartmentId,
+        userId: { not: null },
+        ...(isAll ? {} : { apartmentDong: { in: poll.buildingPermission } }),
+        deletedAt: null,
+      },
+      select: { userId: true },
+    });
+  };
+
+  // 투표 관련 알림 발송
+  private sendPollNotifications = async (tx: any, poll: any, notiType: any) => {
+    const apartmentMembers = await this.getApartmentMembers(tx, poll);
+    const notiData: any = {
+      notiType,
+      title: poll.title,
+      content: poll.description,
+      url: `/poll/${poll.id}`,
+    };
+
+    await Promise.all(
+      apartmentMembers.map((member: any) =>
+        this.notificationRepository.createNotification(tx, notiData, member.userId!),
+      ),
+    );
+  };
+
+  // 투표 기반 공지사항 생성
+  private createNoticeFromPoll = async (tx: any, poll: any) => {
+    await tx.notice.create({
+      data: {
+        boardId: poll.boardId,
+        title: poll.title,
+        content: poll.description,
+        adminId: poll.adminId,
+        category: 'RESIDENT_VOTE',
+        startDate: poll.startDate,
+        endDate: poll.endDate,
+      },
+    });
+  };
+
   // 투표 생성
   createPoll = async (data: Poll, adminId: string) => {
     const { options, content, ...pollData } = data;
 
-    const poll = await prisma.$transaction(async (db) => {
+    return await prisma.$transaction(async (tx) => {
       // 투표 게시글 생성
-      const newPoll = await db.poll.create({
+      const newPoll = await tx.poll.create({
         data: {
           ...pollData,
           adminId,
@@ -84,12 +137,26 @@ class PollRepository {
             },
           },
         },
+        include: {
+          board: true,
+        },
       });
+
+      const notiData: notiData = {
+        notiType: 'POLL_SET',
+        title: data.title,
+        content: data.content,
+        url: `/poll/${newPoll.id}`,
+      };
+
+      // 투표 생성 시 관리자에게 알림
+      await this.notificationRepository.createNotification(tx, notiData, adminId);
+
+      // 투표 적용 입주민 확인 및 알림 발송
+      await this.sendPollNotifications(tx, newPoll, 'POLL_SET');
 
       return newPoll;
     });
-
-    return poll;
   };
 
   // 투표 목록 조회
@@ -241,38 +308,79 @@ class PollRepository {
 
     return await prisma.$transaction(async (tx) => {
       // 1. UPCOMING -> CLOSED (시스템 에러등에 의해 시작 없이 종료 된 경우)
-      const instantClosedUpdates = await tx.poll.updateMany({
+      let instantClosedUpdates = { count: 0 };
+
+      const pollsToClose = await tx.poll.findMany({
         where: {
           status: 'UPCOMING',
-          endDate: { lte: now }, // 이미 끝남!
+          endDate: { lte: now },
           deletedAt: null,
         },
-        data: { status: 'CLOSED' },
+        include: { board: true },
       });
+
+      if (pollsToClose.length > 0) {
+        instantClosedUpdates = await tx.poll.updateMany({
+          where: { id: { in: pollsToClose.map((p) => p.id) } },
+          data: { status: 'CLOSED' },
+        });
+
+        for (const poll of pollsToClose) {
+          await this.sendPollNotifications(tx, poll, 'POLL_END');
+        }
+      }
+
       // 2. UPCOMING -> ONGOING (투표가 시작되고 아직 종료되지 않은 경우)
-      const startUpdates = await tx.poll.updateMany({
+      let startUpdates = { count: 0 };
+      const pollsToStart = await tx.poll.findMany({
         where: {
           status: 'UPCOMING',
           startDate: { lte: now },
-          endDate: { gt: now }, // 아직 미래여야 함!
+          endDate: { gt: now },
           deletedAt: null,
         },
-        data: { status: 'ONGOING' },
+        include: { board: true },
       });
+
+      if (pollsToStart.length > 0) {
+        startUpdates = await tx.poll.updateMany({
+          where: { id: { in: pollsToStart.map((p) => p.id) } },
+          data: { status: 'ONGOING' },
+        });
+
+        for (const poll of pollsToStart) {
+          await this.sendPollNotifications(tx, poll, 'POLL_START');
+        }
+      }
+
       // 3. ONGOING -> CLOSED (정상적으로 진행하다가 종료 된 경우)
-      const endUpdates = await tx.poll.updateMany({
+      let endUpdates = { count: 0 };
+      const pollsToEnd = await tx.poll.findMany({
         where: {
           status: 'ONGOING',
           endDate: { lte: now },
           deletedAt: null,
         },
-        data: { status: 'CLOSED' },
+        include: { board: true },
       });
+
+      if (pollsToEnd.length > 0) {
+        endUpdates = await tx.poll.updateMany({
+          where: { id: { in: pollsToEnd.map((p) => p.id) } },
+          data: { status: 'CLOSED' },
+        });
+
+        for (const poll of pollsToEnd) {
+          await this.createNoticeFromPoll(tx, poll);
+          await this.sendPollNotifications(tx, poll, 'POLL_END');
+        }
+      }
+
       return { instantClosedUpdates, startUpdates, endUpdates };
     });
   };
 }
-
-const pollRepository = new PollRepository();
+const notificationRepository = new NotificationRepository(prisma);
+const pollRepository = new PollRepository(notificationRepository);
 
 export default pollRepository;
