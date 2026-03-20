@@ -14,6 +14,7 @@ import complaintRouter from './modules/complaint/complaint.router';
 import noticeRouter from './modules/notice/notice.router';
 import notificationRouter from './modules/notification/notification.router';
 import commentRouter from './modules/comment/comment.router';
+import eventRouter from './modules/event/event.router';
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/notifications', notificationRouter); // 알림
 app.use('/apartments', apartmentRouter); // 아파트 관련 라우터
 app.use('/residents', residentListRouter); // 입주자 목록 관련 라우터
 app.use('/comments', commentRouter); // 댓글
+app.use('/events', eventRouter); // 이벤트 게시판
 
 //404 처리 미들웨어 및 에러 핸들러 등록
 app.use(defaultNotFoundHandler);
