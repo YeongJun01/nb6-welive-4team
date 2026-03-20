@@ -35,14 +35,6 @@ export class ResidentListController {
     res.status(201).json(result);
   }
 
-  // 사용자로부터 파라미터로 id 받아서 명부 생성 - 보류
-  async createResidentFromUser(req: Request, res: Response) {
-    // 입주민 명부 id
-    const userId = req.params.id;
-    // 로그인 한 관리자
-    const adminId = req.user!.id;
-  }
-
   // 입주자 상세 조회
   async getResidentById(req: Request, res: Response) {
     // 입주민 명부 id
