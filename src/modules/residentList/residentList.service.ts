@@ -44,11 +44,28 @@ export class ResidentListService {
       apartmentId,
       query || {},
     );
+    const formattedResidents = residents.map((resident) => {
+      return {
+        id: resident.id,
+        userId: resident.userId,
+        building: resident.apartmentDong,
+        unitNumber: resident.apartmentHo,
+        contact: resident.contact,
+        name: resident.name,
+        residenceStatus: resident.isRegistered
+          ? ResidentStatus.RESIDENCE
+          : ResidentStatus.NO_RESIDENCE,
+        isHouseholder: resident.isHouseholder ? IsHouseholder.HOUSEHOLDER : IsHouseholder.MEMBER,
+        isRegistered: resident.isRegistered,
+        approvalStatus: resident.approvalStatus,
+        email: resident.email,
+      };
+    });
 
     return {
-      residents,
-      message: `조회된 입주민 결과가 ${residents.length}건 입니다.`,
-      count: residents.length,
+      residents: formattedResidents,
+      message: `조회된 입주민 결과가 ${formattedResidents.length}건 입니다.`,
+      count: formattedResidents.length,
       totalCount,
     };
   }
@@ -89,15 +106,20 @@ export class ResidentListService {
     return {
       id: resident.id,
       userId: resident.userId,
+      apartmentId: resident.apartmentId,
       building: resident.apartmentDong,
       unitNumber: resident.apartmentHo,
       contact: resident.contact,
       name: resident.name,
-      email: resident.email,
-      residenceStatus: ResidentStatus.RESIDENCE,
-      isHouseholder: resident.isHouseholder, // boolean으로 나오긴 함
+      //email: resident.email,
+      residenceStatus: resident.isRegistered
+        ? ResidentStatus.RESIDENCE
+        : ResidentStatus.NO_RESIDENCE,
+      isHouseholder: resident.isHouseholder ? IsHouseholder.HOUSEHOLDER : IsHouseholder.MEMBER,
       isRegistered: resident.isRegistered,
       approvalStatus: resident.approvalStatus,
+      createdAt: resident.createdAt,
+      updatedAt: resident.updatedAt,
     };
   }
 
@@ -149,25 +171,23 @@ export class ResidentListService {
       throw new NotFoundError('입주민을 찾을 수 없습니다.');
     }
 
-    let residenceStatus;
-    if (resident.isRegistered) {
-      residenceStatus = ResidentStatus.RESIDENCE;
-    } else {
-      residenceStatus = ResidentStatus.NO_RESIDENCE;
-    }
-
     const result = {
       id: resident.id,
       userId: resident.userId,
+      apartmentId: resident.apartmentId,
       building: resident.apartmentDong,
       unitNumber: resident.apartmentHo,
       contact: resident.contact,
       name: resident.name,
-      email: resident.email,
-      residenceStatus,
-      IsHouseholder: resident.isHouseholder,
+      //email: resident.email,
+      residenceStatus: resident.isRegistered
+        ? ResidentStatus.RESIDENCE
+        : ResidentStatus.NO_RESIDENCE,
+      isHouseholder: resident.isHouseholder ? IsHouseholder.HOUSEHOLDER : IsHouseholder.MEMBER,
       isRegistered: resident.isRegistered,
       approvalStatus: resident.approvalStatus,
+      createdAt: resident.createdAt,
+      updatedAt: resident.updatedAt,
     };
 
     return result;
@@ -194,25 +214,23 @@ export class ResidentListService {
 
     await this.residentListRepository.updateResident(residentId, data);
 
-    let residenceStatus;
-    if (resident.isRegistered) {
-      residenceStatus = ResidentStatus.RESIDENCE;
-    } else {
-      residenceStatus = ResidentStatus.NO_RESIDENCE;
-    }
-
     const result = {
       id: resident.id,
       userId: resident.userId,
+      apartmentId: resident.apartmentId,
       building: resident.apartmentDong,
       unitNumber: resident.apartmentHo,
       contact: resident.contact,
       name: resident.name,
-      email: resident.email,
-      residenceStatus,
-      IsHouseholder: resident.isHouseholder,
+      //email: resident.email,
+      residenceStatus: resident.isRegistered
+        ? ResidentStatus.RESIDENCE
+        : ResidentStatus.NO_RESIDENCE,
+      isHouseholder: resident.isHouseholder ? IsHouseholder.HOUSEHOLDER : IsHouseholder.MEMBER,
       isRegistered: resident.isRegistered,
       approvalStatus: resident.approvalStatus,
+      createdAt: resident.createdAt,
+      updatedAt: resident.updatedAt,
     };
 
     return result;
