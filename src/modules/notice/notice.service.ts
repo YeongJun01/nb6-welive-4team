@@ -76,7 +76,7 @@ class NoticeService {
     const today = new Date();
 
     if (data.startDate && data.startDate < today) {
-      throw new BadRequestError('게시글 시작일은 오늘보다 과거일 수 없습니다');
+      throw new BadRequestError('게시글 시작일을 확인 해주시기 바랍니다');
     }
 
     if (data.startDate && !data.endDate) {
@@ -84,7 +84,7 @@ class NoticeService {
     }
 
     if (data.startDate && data.endDate && data.startDate >= data.endDate) {
-      throw new BadRequestError('게시글 종료일이 시작일보다 빠를 수 없습니다');
+      throw new BadRequestError('게시글 종료일을 확인 해 주시기 바랍니다');
     }
 
     // 이벤트 생성 설정
@@ -170,7 +170,7 @@ class NoticeService {
     const today = new Date();
 
     if (data.startDate && data.startDate < today) {
-      throw new BadRequestError('게시글 시작일은 오늘보다 과거일 수 없습니다');
+      throw new BadRequestError('게시글 시작일을 확인 해주시기 바랍니다');
     }
 
     if (data.startDate && !data.endDate) {
@@ -178,7 +178,7 @@ class NoticeService {
     }
 
     if (data.startDate && data.endDate && data.startDate >= data.endDate) {
-      throw new BadRequestError('게시글 종료일이 시작일보다 빠를 수 없습니다');
+      throw new BadRequestError('게시글 종료일을 확인 해 주시기 바랍니다');
     }
 
     const isDate = data.startDate && data.endDate ? true : false;

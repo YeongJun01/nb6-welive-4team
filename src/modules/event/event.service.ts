@@ -11,11 +11,11 @@ class EventService {
     return eventList.map((event: any) => {
       return {
         id: event.id,
-        type: event.pollId ? 'poll' : 'notice',
+        start: event.pollId ? event.poll.startDate : event.notice.startDate,
+        end: event.pollId ? event.poll.endDate : event.notice.endDate,
         title: event.title,
-        startDate: event.pollId ? event.poll.startDate : event.notice.startDate,
-        endDate: event.pollId ? event.poll.endDate : event.notice.endDate,
         category: event.pollId ? 'RESIDENT_VOTE' : event.notice.category,
+        type: event.pollId ? 'POLL' : 'NOTICE',
       };
     });
   };

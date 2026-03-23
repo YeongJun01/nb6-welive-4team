@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { PORT } from './lib/constants';
 import cookieParser from 'cookie-parser';
 import apartmentRouter from './modules/apartment/apartment.router';
 import { defaultNotFoundHandler, errorHandler } from './middlewares/errorHandler';
@@ -15,13 +14,19 @@ import noticeRouter from './modules/notice/notice.router';
 import notificationRouter from './modules/notification/notification.router';
 import commentRouter from './modules/comment/comment.router';
 import eventRouter from './modules/event/event.router';
+import { FRONTEND_URL } from './lib/constants';
 
 const app = express();
 
 // Middleware 설정
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  }),
+);
 
 app.get('/', (req, res) => {
   res.send('Hello, WeLive!');
