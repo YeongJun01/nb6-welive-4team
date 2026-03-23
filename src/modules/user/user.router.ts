@@ -4,13 +4,20 @@ import { asyncHandler, authMiddleware } from '../../middlewares';
 import { UserController, UserService, UserRepository } from './';
 import { ResidentListRepository } from '../residentList/residentList.repository';
 import { ResidentListService } from '../residentList/residentList.service';
+import { NotificationRepository } from '../notification/notification.repository';
 
 const router = Router();
 
 const userRepository = new UserRepository(prisma);
+const notificationRepository = new NotificationRepository(prisma);
 const residentListRepository = new ResidentListRepository(prisma);
 const residentListService = new ResidentListService(residentListRepository, userRepository);
-const userService = new UserService(userRepository, residentListRepository, residentListService);
+const userService = new UserService(
+  userRepository,
+  residentListRepository,
+  residentListService,
+  notificationRepository,
+);
 const userController = new UserController(userService);
 
 router.use(authMiddleware);

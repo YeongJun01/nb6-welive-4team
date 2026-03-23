@@ -93,4 +93,22 @@ export class UserRepository {
       },
     });
   }
+
+  /**
+   * 10. 역할(role)로 유저 목록 조회
+   */
+  async findUsersByRole(role: User['role']) {
+    return await this.prisma.user.findMany({
+      where: { role, deletedAt: null },
+    });
+  }
+
+  /**
+   * 11. 특정 아파트의 관리자 죄회
+   */
+  async findAdminsByApartmentId(apartmentId: string) {
+    return await this.prisma.user.findMany({
+      where: { apartmentId, role: 'ADMIN', deletedAt: null },
+    });
+  }
 }

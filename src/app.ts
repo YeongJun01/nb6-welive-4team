@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { PORT, CORS_ORIGIN } from './lib/constants';
 import cookieParser from 'cookie-parser';
 import apartmentRouter from './modules/apartment/apartment.router';
 import { defaultNotFoundHandler, errorHandler } from './middlewares/errorHandler';
@@ -21,12 +22,7 @@ const app = express();
 // Middleware 설정
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: FRONTEND_URL,
-    credentials: true,
-  }),
-);
+app.use(cors());
 
 app.get('/', (req, res) => {
   res.send('Hello, WeLive!');

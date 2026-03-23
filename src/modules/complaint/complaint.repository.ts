@@ -273,7 +273,7 @@ class ComplaintRepository {
       const notiTypeSetting = this.notificationType(complaint.status);
 
       const notiData: notiData = {
-        notiType: notiTypeSetting,
+        notiType: notiTypeSetting as any,
         title: complaint.title,
         content: complaint.content,
         url: `/complaints/${complaint.id}`,
