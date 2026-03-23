@@ -21,7 +21,21 @@ export type ApartmentListPublicDto = {
   totalCount: number; // 아파트 총 개수
 };
 
-export type ApartmentResponseDto = Omit<Apartment, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+export type ApartmentResponseDto = {
+  id: Apartment['id']; // 아파트 고유 ID (uuid)
+  name: Apartment['name']; // 아파트 이름
+  address: Apartment['address']; // 아파트 주소
+  officeNumber: Apartment['officeNumber']; // 아파트 오피스 번호
+  description: Apartment['description']; // 아파트 설명
+  startComplexNumber: string; // 아파트 시작
+  endComplexNumber: string; // 아파트 끝
+  startDongNumber: string; // 아파트 시작
+  endDongNumber: string; // 아파트 끝
+  startFloorNumber: string; // 아파트 시작
+  endFloorNumber: string; // 아파트 끝
+  startHoNumber: string; // 아파트 시작
+  endHoNumber: string; // 아파트 끝
+  apartmentStatus: Apartment['apartmentStatus']; // 아파트 상태
   adminId: User['id']; // 아파트 관리자 ID
   adminName: User['name']; // 아파트 관리자 이름
   adminContact: User['contact']; // 아파트 관리자 연락처
@@ -43,10 +57,18 @@ export type ApartmentResponseWithRangeDto = ApartmentResponseDto & {
   hoRange: ApartmentRangeDto; // 아파트 범위 정보
 };
 
-export type ApartmentResponseWithRangePublicDto = Omit<
-  Apartment,
-  'officeNumber' | 'apartmentStatus' | 'createdAt' | 'updatedAt' | 'deletedAt'
-> & {
+export type ApartmentResponseWithRangePublicDto = {
+  id: Apartment['id']; // 아파트 고유 ID (uuid)
+  name: Apartment['name']; // 아파트 이름
+  address: Apartment['address']; // 아파트 주소
+  startComplexNumber: string; // 아파트 시작
+  endComplexNumber: string; // 아파트 끝
+  startDongNumber: string; // 아파트 시작
+  endDongNumber: string; // 아파트 끝
+  startFloorNumber: string; // 아파트 시작
+  endFloorNumber: string; // 아파트 끝
+  startHoNumber: string; // 아파트 시작
+  endHoNumber: string;
   dongRange: ApartmentRangeDto; // 아파트 범위 정보
   hoRange: ApartmentRangeDto; // 아파트 범위 정보
 };
