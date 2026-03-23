@@ -149,7 +149,7 @@ class PollRepository {
       });
 
       const notiData: notiData = {
-        notiType: 'POLL_SET',
+        notiType: 'POLL_SET' as any,
         title: data.title,
         content: data.content,
         url: `/poll/${newPoll.id}`,
