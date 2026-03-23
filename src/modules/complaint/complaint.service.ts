@@ -19,8 +19,8 @@ class ComplaintService {
       createdAt: complaint.createdAt,
       updatedAt: complaint.updatedAt,
       isPublic: complaint.isPublic,
-      viewCount: complaint.viewCount,
-      commentsCount: complaint._count?.comments,
+      viewsCount: complaint.viewCount,
+      commentsCount: complaint._count?.comments ?? 0,
       status: complaint.status,
       dong: complaint.apartmentDong,
       ho: complaint.apartmentHo,
@@ -31,7 +31,7 @@ class ComplaintService {
     return {
       ...this.mapComplaintList(complaint),
       content: complaint.content,
-      boardType: 'COMPLAINT',
+      boardType: '민원',
       comments: complaint.comments?.map((comment: any) => ({
         id: comment.id,
         userId: comment.userId,
@@ -91,7 +91,15 @@ class ComplaintService {
     }
 
     if (user.role === 'SUPER_ADMIN') {
-      throw new BadRequestError('민원 조회 권한이 없습니다.');
+      throw new ForbiddenError('민원 조회 권한이 없습니다.');
+    }
+
+    if (user.role === 'USER' && query.dong && user.residentLists!.apartmentDong !== query.dong) {
+      throw new ForbiddenError('민원 조회 권한이 없습니다.');
+    }
+
+    if (user.role === 'USER' && query.ho && user.residentLists!.apartmentHo !== query.ho) {
+      throw new ForbiddenError('민원 조회 권한이 없습니다.');
     }
 
     const complaintBoard = await boardRepo.getBoardInfoWithApartmentId(user.apartmentId!);
@@ -173,7 +181,7 @@ class ComplaintService {
     const admin = await userRepo.getUserInfo(adminId);
 
     if (!complaint) {
-      throw new BadRequestError('존재하지 않는 민원입니다.');
+      throw new NotFoundError('존재하지 않는 민원입니다.');
     }
 
     if (!admin) {

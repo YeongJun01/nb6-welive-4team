@@ -6,7 +6,7 @@ export interface ComplaintResponse {
   createdAt: Date;
   updatedAt: Date;
   isPublic: boolean;
-  viewCount: number;
+  viewsCount: number;
   commentsCount: number;
   status: string;
   dong: string;

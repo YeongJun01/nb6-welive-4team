@@ -13,6 +13,12 @@ type Poll = Omit<Infer<typeof pollStruct.pollInformation>, 'status' | 'startDate
   endDate: Date;
 };
 
+type UpdatePoll = Omit<Infer<typeof pollStruct.updatePoll>, 'status' | 'startDate' | 'endDate'> & {
+  status: DbPollStatus;
+  startDate: Date;
+  endDate: Date;
+};
+
 type OrderBy = 'asc' | 'desc';
 
 type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
@@ -239,7 +245,7 @@ class PollRepository {
   };
 
   // 투표 수정
-  updatePoll = async (data: Poll, adminId: string, pollId: string) => {
+  updatePoll = async (data: UpdatePoll, adminId: string, pollId: string) => {
     const { options, content, ...pollData } = data;
 
     const poll = await prisma.$transaction(async (db) => {
@@ -250,6 +256,9 @@ class PollRepository {
           ...pollData,
           adminId,
           description: content,
+        },
+        include: {
+          pollOptions: true,
         },
       });
 

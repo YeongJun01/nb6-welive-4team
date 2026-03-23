@@ -29,6 +29,16 @@ const getPollList = s.assign(
   }),
 );
 
+const updatePoll = s.object({
+  title: s.string(),
+  content: s.string(),
+  buildingPermission: s.array(s.string()),
+  startDate: commonStruct.date,
+  endDate: commonStruct.date,
+  status: s.enums(['PENDING', 'IN_PROGRESS', 'CLOSED']),
+  options: s.array(s.object({ title: s.string() })),
+});
+
 const getPollId = s.object({
   pollId: commonStruct.uuid,
 });
@@ -37,5 +47,6 @@ export default {
   pollInformation,
   getPollList,
   getPollId,
+  updatePoll,
   userInfo,
 };

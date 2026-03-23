@@ -11,7 +11,7 @@ class PollController {
     const adminId = req.user!.id;
     await pollService.createPoll(data, adminId);
 
-    res.status(201).json({ message: '정상적으로 등록 처리되었습니다' });
+    res.status(201).json({ message: '정상적으로 투표 등록 처리되었습니다' });
   };
 
   // 투표 목록 조회
@@ -34,13 +34,13 @@ class PollController {
 
   // 투표 수정
   updatePoll = async (req: Request, res: Response) => {
-    const data = create(req.body, pollStruct.pollInformation);
+    const data = create(req.body, pollStruct.updatePoll);
     const adminId = req.user!.id;
     const pollId = mask(req.params.pollId, commonStruct.uuid);
 
     const poll = await pollService.updatePoll(data, adminId, pollId);
 
-    res.status(201).json({ message: '정상적으로 수정 처리되었습니다' });
+    res.status(201).json(poll);
   };
 
   // 투표 삭제
@@ -49,7 +49,7 @@ class PollController {
     const adminId = req.user!.id;
 
     await pollService.deletePoll(pollId, adminId);
-    res.status(200).json({ message: '정상적으로 삭제 처리되었습니다' });
+    res.status(200).json({ message: '정상적으로 투표 삭제 처리되었습니다' });
   };
 }
 

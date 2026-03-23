@@ -5,6 +5,7 @@ import pollRepository, { userRepo, boardRepo } from './poll.repository';
 import cron from 'node-cron';
 
 type Poll = Infer<typeof pollStruct.pollInformation>;
+type UpdatePoll = Infer<typeof pollStruct.updatePoll>;
 
 class PollService {
   private dateCheck = (startDate: Date, endDate: Date) => {
@@ -78,12 +79,26 @@ class PollService {
   private mapPollInfo = (poll: any) => {
     return {
       ...this.mapPollList(poll),
-      boardName: '주민 투표',
       content: poll.description,
+      boardName: '주민투표',
       options: poll.pollOptions.map((option: any) => ({
-        optionId: option.id,
-        content: option.content,
+        id: option.id,
+        title: option.content,
         voteCount: option.voteCount === null ? 0 : option.voteCount,
+      })),
+    };
+  };
+
+  private mapPollInfoUpdate = (poll: any) => {
+    return {
+      title: poll.title,
+      content: poll.description,
+      buildingPermission: poll.buildingPermission,
+      startDate: poll.startDate,
+      endDate: poll.endDate,
+      status: this.getMappedStatus(poll.status),
+      options: poll.pollOptions.map((option: any) => ({
+        title: option.content,
       })),
     };
   };
@@ -211,16 +226,12 @@ class PollService {
   };
 
   // 투표 수정
-  updatePoll = async (data: Poll, adminId: string, pollId: string) => {
+  updatePoll = async (data: UpdatePoll, adminId: string, pollId: string) => {
     // 투표 정보 확인
     const pollInfo = await pollRepository.getPollDetail(pollId);
 
     if (!pollInfo) {
       throw new NotFoundError('존재하지 않는 투표입니다.');
-    }
-
-    if (pollInfo.boardId !== data.boardId) {
-      throw new BadRequestError('Board 정보 확인 바랍니다');
     }
 
     // 유저 기능 생성 후 추가 작업 진행
@@ -260,7 +271,9 @@ class PollService {
       pollId,
     );
 
-    return updatePoll;
+    const poll = this.mapPollInfoUpdate(updatePoll);
+
+    return poll;
   };
 
   // 투표 삭제
