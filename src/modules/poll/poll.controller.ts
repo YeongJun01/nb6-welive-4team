@@ -40,7 +40,7 @@ class PollController {
 
     const poll = await pollService.updatePoll(data, adminId, pollId);
 
-    res.status(201).json(poll);
+    res.status(200).json({ message: '정상적으로 수정 처리되었습니다' });
   };
 
   // 투표 삭제

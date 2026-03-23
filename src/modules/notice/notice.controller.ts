@@ -29,7 +29,7 @@ class NoticeController {
 
     const notice = await noticeService.getNoticeDetail(noticeId, userId);
 
-    res.status(201).json(notice);
+    res.status(200).json(notice);
   };
 
   updateNotice = async (req: Request, res: Response) => {
@@ -39,7 +39,7 @@ class NoticeController {
 
     const notice = await noticeService.updateNotice(data, noticeId, userId);
 
-    res.status(201).json(notice);
+    res.status(200).json(notice);
   };
 
   deleteNotice = async (req: Request, res: Response) => {
@@ -48,7 +48,7 @@ class NoticeController {
 
     await noticeService.deleteNotice(noticeId, adminId);
 
-    res.status(201).json({ message: '정상적으로 삭제 처리되었습니다' });
+    res.status(200).json({ message: '정상적으로 삭제 처리되었습니다' });
   };
 }
 

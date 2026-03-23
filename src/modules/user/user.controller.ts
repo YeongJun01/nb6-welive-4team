@@ -22,8 +22,8 @@ export class UserController {
   async signUpAdmin(req: Request, res: Response) {
     const data = mask({ ...req.body, role: 'ADMIN' }, userStruct.signUpAdmin);
     const user = await this.userService.signUp(data);
-    const { id, name, email, joinStatus, role } = user;
-    res.status(201).json({ id, name, email, joinStatus, role });
+    const { id, name, email, joinStatus, role, apartmentId } = user;
+    res.status(201).json({ id, name, email, joinStatus, role, apartmentId });
   }
 
   /**
@@ -67,12 +67,7 @@ export class UserController {
     const requestId = req.user!.id;
     const adminId = req.params.adminId as string;
     const { status } = create(req.body, userStruct.updateStatusById);
-    await this.userService.updateUserJoinStatus(
-      requestId,
-      adminId,
-      status,
-      'ADMIN',
-    );
+    await this.userService.updateUserJoinStatus(requestId, adminId, status, 'ADMIN');
     res.status(200).json({ message: '작업이 성공적으로 완료되었습니다' });
   }
 
@@ -93,12 +88,7 @@ export class UserController {
     const requestId = req.user!.id;
     const residentId = req.params.residentId as string;
     const { status } = create(req.body, userStruct.updateStatusById);
-    await this.userService.updateUserJoinStatus(
-      requestId,
-      residentId,
-      status,
-      'USER',
-    );
+    await this.userService.updateUserJoinStatus(requestId, residentId, status, 'USER');
     res.status(200).json({ message: '작업이 성공적으로 완료되었습니다' });
   }
 

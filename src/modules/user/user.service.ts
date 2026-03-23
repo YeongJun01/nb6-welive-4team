@@ -1,9 +1,11 @@
+import prisma from '../../lib/prisma';
 import { Prisma, Status, User } from '@prisma/client';
 import { UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../../lib/errors';
 import { UserRepository } from './';
 import { ResidentListRepository } from '../residentList/residentList.repository';
 import { ResidentListService } from '../residentList/residentList.service';
 import { SignUpDto, UpdatePasswordDto } from './user.dto';
+import { NotificationRepository } from '../notification/notification.repository';
 import * as bcrypt from 'bcrypt';
 
 export class UserService {
@@ -11,6 +13,7 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly residentListRepository: ResidentListRepository,
     private readonly residentListService: ResidentListService,
+    private readonly notificationRepository: NotificationRepository,
   ) {}
 
   /**
@@ -54,11 +57,51 @@ export class UserService {
       }
     }
 
-    const { apartmentId, apartmentDong, apartmentHo, ...userData } = data;
+    const {
+      apartmentId,
+      apartmentDong,
+      apartmentHo,
+      apartmentName,
+      apartmentAddress,
+      apartmentManagementNumber,
+      description,
+      startComplexNumber,
+      endComplexNumber,
+      startBuildingNumber,
+      endBuildingNumber,
+      startFloorNumber,
+      endFloorNumber,
+      startUnitNumber,
+      endUnitNumber,
+      ...userData
+    } = data;
 
     // 아파트 ID가 있으면 존재 여부 확인
-    if (apartmentId) {
-      const apartment = await this.userRepository.findApartmentById(apartmentId);
+    let finalApartmentId = apartmentId;
+
+    // ADMIN 가입 시 아파트 함께 생성
+    if (data.role === 'ADMIN' && apartmentName) {
+      const newApartment = await prisma.apartment.create({
+        data: {
+          name: apartmentName,
+          address: apartmentAddress!,
+          officeNumber: apartmentManagementNumber!,
+          description: description!,
+          startComplexNumber: startComplexNumber!,
+          endComplexNumber: endComplexNumber!,
+          startBuildingNumber: startBuildingNumber!,
+          endBuildingNumber: endBuildingNumber!,
+          startFloorNumber: startFloorNumber!,
+          endFloorNumber: endFloorNumber!,
+          startUnitNumber: startUnitNumber!,
+          endUnitNumber: endUnitNumber!,
+        },
+      });
+      finalApartmentId = newApartment.id;
+    }
+
+    if (finalApartmentId && !data.role.includes('ADMIN')) {
+      const apartment = await this.userRepository.findApartmentById(finalApartmentId);
       if (!apartment) throw new NotFoundError('존재하지 않는 아파트입니다.');
     }
 
@@ -67,7 +110,7 @@ export class UserService {
       ...userData,
       password: hashedPassword,
       joinStatus: currentJoinStatus,
-      apartment: apartmentId ? { connect: { id: apartmentId } } : undefined,
+      apartment: finalApartmentId ? { connect: { id: finalApartmentId } } : undefined,
     });
 
     // 입주민 명부에 userId 연결
@@ -75,6 +118,36 @@ export class UserService {
       await this.residentListRepository.updateResidentUserId(matchedResidentId, newUser.id);
     } else if (data.role === 'USER') {
       await this.residentListService.createResidentFromSignUp(newUser.id, data);
+    }
+
+    // 회원가입 알림 전송
+    const notiData = {
+      notiType: 'SIGNUP_REQ' as const,
+      title: '새로운 회원가입 신청',
+      content: `${newUser.name}님이 회원가입을 신청했습니다.`,
+      url: '/auth/signup',
+    };
+
+    if (newUser.role === 'ADMIN') {
+      // 관리자 가입 -> 슈퍼관리자에게 알림
+      const superAdmins = await this.userRepository.findUsersByRole('SUPER_ADMIN');
+      for (const superAdmin of superAdmins) {
+        await this.notificationRepository.createNotification(
+          this.userRepository['prisma'],
+          notiData,
+          superAdmin.id,
+        );
+      }
+    } else if (data.role === 'USER' && data.apartmentId) {
+      // 입주민 가입 → 같은 아파트 관리자들에게 알림
+      const admins = await this.userRepository.findAdminsByApartmentId(data.apartmentId);
+      for (const admin of admins) {
+        await this.notificationRepository.createNotification(
+          this.userRepository['prisma'],
+          notiData,
+          admin.id,
+        );
+      }
     }
 
     return newUser;
