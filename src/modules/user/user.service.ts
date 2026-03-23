@@ -54,7 +54,7 @@ export class UserService {
       }
     }
 
-    const { apartmentId, apartmentDong, apartmentHo, ...userData } = data;
+    const { apartmentId, apartmentDong, apartmentHo, ...userData } = data; // 연락처 추가
 
     // 아파트 ID가 있으면 존재 여부 확인
     if (apartmentId) {
