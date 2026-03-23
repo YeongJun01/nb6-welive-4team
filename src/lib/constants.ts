@@ -12,4 +12,4 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/welive';
 
-export { PORT, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, DATABASE_URL, CORS_ORIGIN };
+export { PORT, FRONTEND_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, DATABASE_URL, CORS_ORIGIN };
