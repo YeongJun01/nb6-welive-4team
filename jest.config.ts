@@ -7,16 +7,18 @@ export default {
   testMatch: ['<rootDir>/src/**/*.test.ts'],
   // 4. moduleFileExtensions: ts, js 확장자 인식
   moduleFileExtensions: ['ts', 'js'],
-  // 5. setupFilesAfterEnv: 테스트 시작 전 실행할 파일
+  // 5. setupFiles: 테스트 시작 전 환경 변수 등을 로드할 파일
+  setupFiles: ['<rootDir>/src/test/setupEnv.ts'],
+  // 6. setupFilesAfterEnv: 테스트 프레임워크가 설치된 후 실행할 파일
   // setupFilesAfterEnv: ['./src/lib/prisma.mock.ts'],
-  // 6. clearMocks: 각 테스트 후 자동으로 mock 초기화
+  // 7. clearMocks: 각 테스트 후 자동으로 mock 초기화
   clearMocks: true,
-  // 7. resetMocks: 각 테스트 후 mock 초기화
+  // 8. resetMocks: 각 테스트 후 mock 초기화
   resetMocks: true,
-  // 8. restoreMocks: 각 테스트 후 mock 복원
+  // 9. restoreMocks: 각 테스트 후 mock 복원
   restoreMocks: true,
-  // 9. coverageDirectory: 커버리지 리포트 저장 경로
+  // 10. coverageDirectory: 커버리지 리포트 저장 경로
   coverageDirectory: 'coverage',
-  // 10. coverageReporters: 커버리지 리포트 형식
+  // 11. coverageReporters: 커버리지 리포트 형식
   coverageReporters: ['text', 'html'],
 };
