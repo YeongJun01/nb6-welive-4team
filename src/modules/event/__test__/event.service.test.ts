@@ -9,7 +9,7 @@ jest.mock('../../user/user.repository');
 jest.mock('../../apartment/apartment.repository');
 jest.mock('../event.repository');
 
-describe('EventService 단위 테스트', () => {
+describe('Event Service 단위 테스트', () => {
   // [초기 셋팅] Mock 및 Spy 변수 선언
   let mockApartment: any;
   let mockUser: any;
@@ -39,8 +39,7 @@ describe('EventService 단위 테스트', () => {
   });
 
   describe('getEventList 테스트', () => {
-
-    it('모든 조건이 충족되면 가공된 이벤트 목록을 반환한다', async () => {
+    it('[200]모든 조건이 충족되면 가공된 이벤트 목록을 반환한다', async () => {
       const mockEvents = [
         {
           id: 'ev-1',
@@ -64,15 +63,15 @@ describe('EventService 단위 테스트', () => {
       expect(result[0].title).toBe('4월 점검');
     });
 
-    it('사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
+    it('[404] 사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
       findUserSpy.mockResolvedValue(null);
-      
+
       await expect(eventService.getEventList(mockQuery, mockUser.id)).rejects.toThrow(
         NotFoundError,
       );
     });
 
-    it('아파트 정보가 존재하지 않으면 NotFoundError를 던진다', async () => {
+    it('[404] 아파트 정보가 존재하지 않으면 NotFoundError를 던진다', async () => {
       findUserSpy.mockResolvedValue({ id: mockUser.id, apartmentId: mockApartment.id } as any);
       findApartmentSpy.mockResolvedValue(null);
 
@@ -81,7 +80,7 @@ describe('EventService 단위 테스트', () => {
       );
     });
 
-    it('사용자의 아파트 ID와 쿼리의 아파트 ID가 다르면 ForbiddenError를 던진다', async () => {
+    it('[403] 사용자의 아파트 ID와 쿼리의 아파트 ID가 다르면 ForbiddenError를 던진다', async () => {
       findUserSpy.mockResolvedValue({ id: mockUser.id, apartmentId: 'notMatch' } as any);
       findApartmentSpy.mockResolvedValue({ id: mockApartment.id } as any);
 

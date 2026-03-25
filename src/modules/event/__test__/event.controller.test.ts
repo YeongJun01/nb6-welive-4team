@@ -3,7 +3,7 @@ import prisma from '../../../lib/prisma';
 import app from '../../../app';
 import * as bcrypt from 'bcrypt';
 
-describe('EventController 통합 테스트', () => {
+describe('Event API 통합 테스트', () => {
   // [초기 셋팅] 테스트용 아파트, 관리자, 사용자용 변수 선언
   const userAgent1 = request.agent(app);
   const userAgent2 = request.agent(app);
@@ -17,13 +17,21 @@ describe('EventController 통합 테스트', () => {
 
   // [초기 셋팅] 테스트용 아파트, 관리자, 사용자 데이터 생성
   beforeAll(async () => {
+    // 0. 기존 잔여 데이터 청소 (이전 테스트 실패 대비)
+    await prisma.notification.deleteMany();
+    await prisma.event.deleteMany();
+    await prisma.notice.deleteMany();
+    await prisma.board.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.apartment.deleteMany();
+
     // 1. 테스트용 아파트 생성
     testApartment1 = await prisma.apartment.create({
       data: {
-        name: '테스트 아파트',
-        address: '서울시 강남구',
-        officeNumber: '021234567',
-        description: '테스트용 아파트입니다',
+        name: '테스트 아파트 event',
+        address: '서울시 강남구 event',
+        officeNumber: '021234567event',
+        description: '테스트용 아파트입니다 event',
         endComplexNumber: 1,
         endBuildingNumber: 1,
         endFloorNumber: 1,
@@ -34,10 +42,10 @@ describe('EventController 통합 테스트', () => {
 
     testApartment2 = await prisma.apartment.create({
       data: {
-        name: '테스트 아파트2',
-        address: '서울시 강남구2',
-        officeNumber: '021234568',
-        description: '테스트용 아파트입니다',
+        name: '테스트 아파트2 event',
+        address: '서울시 강남구2 event',
+        officeNumber: '021234568event',
+        description: '테스트용 아파트입니다2 event',
         endComplexNumber: 1,
         endBuildingNumber: 1,
         endFloorNumber: 1,
@@ -50,11 +58,11 @@ describe('EventController 통합 테스트', () => {
     const hashedPassword = await bcrypt.hash('test1234', 10);
     testAdmin = await prisma.user.create({
       data: {
-        username: 'testadmin',
+        username: 'testadminEvent',
         password: hashedPassword,
-        name: '관리자',
-        email: 'admin@test.com',
-        contact: '01012345678',
+        name: '관리자 event',
+        email: 'adminEvent@test.com',
+        contact: '01012345678event',
         role: 'ADMIN',
         joinStatus: 'APPROVED',
         apartmentId: testApartment1.id,
@@ -63,11 +71,11 @@ describe('EventController 통합 테스트', () => {
 
     testUser1 = await prisma.user.create({
       data: {
-        username: 'testuser1',
+        username: 'testuser1Event',
         password: hashedPassword,
-        name: '사용자1',
-        email: 'user1@test.com',
-        contact: '01087654321',
+        name: '사용자1 event',
+        email: 'user1Event@test.com',
+        contact: '01087654321event',
         role: 'USER',
         joinStatus: 'APPROVED',
         apartmentId: testApartment1.id,
@@ -76,11 +84,11 @@ describe('EventController 통합 테스트', () => {
 
     testUser2 = await prisma.user.create({
       data: {
-        username: 'testuser2',
+        username: 'testuser2Event',
         password: hashedPassword,
-        name: '사용자2',
-        email: 'user2@test.com',
-        contact: '01087654322',
+        name: '사용자2 event',
+        email: 'user2Event@test.com',
+        contact: '01087654322event',
         role: 'USER',
         joinStatus: 'APPROVED',
         apartmentId: testApartment2.id,
@@ -132,7 +140,7 @@ describe('EventController 통합 테스트', () => {
       // 1. 로그인 수행 및 토큰 추출
       const loginRes = await userAgent1
         .post('/auth/login')
-        .send({ email: 'user1@test.com', password: 'test1234' });
+        .send({ email: 'user1Event@test.com', password: 'test1234' });
 
       const authHeader = loginRes.headers.authorization;
       const accessToken = authHeader.replace(/^Bearer\s+/i, '').trim();
@@ -156,7 +164,7 @@ describe('EventController 통합 테스트', () => {
       // 1. 로그인 수행 및 토큰 추출
       const loginRes = await userAgent2
         .post('/auth/login')
-        .send({ email: 'user2@test.com', password: 'test1234' });
+        .send({ email: 'user2Event@test.com', password: 'test1234' });
 
       const authHeader = loginRes.headers.authorization;
       const accessToken = authHeader.replace(/^Bearer\s+/i, '').trim();
