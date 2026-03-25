@@ -77,8 +77,14 @@
 - **민원(Complaint) 관리**: 민원 접수, 조회, 수정, 삭제, 상태 변경(대기/처리 중/완료)
 - **투표(Poll) 관리**: 투표 생성, 목록/상세 조회, 수정, 삭제
 - **투표 참여(Vote)**: 투표 옵션에 투표, 투표 취소
-- **실시간 알림(Notification)**: Socket.io 기반 실시간 이벤트 전달
-- **이벤트/공지사항/댓글**: 개발 진행 중 (`src.ts` 플레이스홀더)
+- **실시간 알림(Notification)**: Socket.io + SSE(30초 폴링) 기반 실시간 알림 전달
+  - 회원가입 신청 알림 (관리자 가입→슈퍼관리자, 입주민 가입→관리자)
+  - 민원 등록/상태 변경 알림
+  - 공지사항 등록 알림
+  - 투표 생성/시작/종료 알림
+- **이벤트 관리**: 일정 관리 기능
+- **공지사항 관리**: 공지 등록, 조회, 수정, 삭제
+- **댓글 관리**: 민원/공지에 대한 댓글 기능
 
 ---
 
@@ -132,6 +138,31 @@
 | `POST`   | `/:optionId/vote`     |  O   | 투표 옵션 선택    |
 | `DELETE` | `/:optionId/vote`     |  O   | 투표 취소         |
 
+#### 🔔 알림 (Notifications) - `/notifications`
+
+| Method  | Endpoint                   | 인증 | 설명                                    |
+| :------ | :------------------------- | :--: | :-------------------------------------- |
+| `GET`   | `/sse`                     |  O   | 읽지 않은 알림 실시간 수신 (SSE, 30초)  |
+| `PATCH` | `/:notificationId/read`    |  O   | 알림 읽음 처리                          |
+
+#### 📢 공지사항 (Notices) - `/notices`
+
+| Method   | Endpoint       | 인증 | 설명              |
+| :------- | :------------- | :--: | :---------------- |
+| `POST`   | `/`            |  O   | 공지사항 등록     |
+| `GET`    | `/`            |  O   | 공지사항 목록 조회 |
+| `GET`    | `/:noticeId`   |  O   | 공지사항 상세 조회 |
+| `PATCH`  | `/:noticeId`   |  O   | 공지사항 수정     |
+| `DELETE` | `/:noticeId`   |  O   | 공지사항 삭제     |
+
+#### 💬 댓글 (Comments) - `/comments`
+
+| Method   | Endpoint  | 인증 | 설명        |
+| :------- | :-------- | :--: | :---------- |
+| `POST`   | `/`       |  O   | 댓글 작성   |
+| `PATCH`  | `/:id`    |  O   | 댓글 수정   |
+| `DELETE` | `/:id`    |  O   | 댓글 삭제   |
+
 ---
 
 ## 프로젝트 폴더 구조
@@ -152,7 +183,7 @@
 │   │   │   ├── auth.service.ts
 │   │   │   ├── auth.dto.ts
 │   │   │   └── auth.router.ts
-│   │   ├── comment/         # 댓글 관리 (개발 중)
+│   │   ├── comment/         # 댓글 관리
 │   │   ├── complaint/       # 민원 관리
 │   │   │   ├── complaint.controller.ts
 │   │   │   ├── complaint.service.ts
@@ -160,9 +191,9 @@
 │   │   │   ├── complaint.router.ts
 │   │   │   ├── complaint.validation.ts
 │   │   │   └── complaint.type.ts
-│   │   ├── event/           # 이벤트 관리 (개발 중)
-│   │   ├── notice/          # 공지사항 관리 (개발 중)
-│   │   ├── notification/    # 알림 관리 (개발 중)
+│   │   ├── event/           # 이벤트 관리
+│   │   ├── notice/          # 공지사항 관리
+│   │   ├── notification/    # 알림 관리 (Socket.io + SSE)
 │   │   ├── poll/            # 투표 게시판
 │   │   │   ├── poll.controller.ts
 │   │   │   ├── poll.service.ts
@@ -185,6 +216,7 @@
 │   ├── lib/
 │   │   ├── prisma.ts        # Prisma Client 싱글톤 인스턴스
 │   │   ├── constants.ts     # 전역 상수 정의
+│   │   ├── socket.ts        # Socket.io 싱글톤 인스턴스
 │   │   └── errors/          # 커스텀 HTTP 에러 클래스
 │   │       ├── BadRequestError.ts
 │   │       ├── ConflictError.ts
@@ -200,6 +232,7 @@
 │   │   └── common.validation.ts  # superstruct 공통 유효성 검사
 │   └── types/
 │       └── express.d.ts     # Express Request 타입 확장 (.d.ts)
+├── jest.config.ts
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
@@ -226,6 +259,26 @@
 
 ---
 
+## 테스트
+
+Jest + Supertest 기반의 유닛 테스트 및 통합 테스트를 지원합니다.
+
+```bash
+# 전체 테스트 실행
+npm run test
+
+# 특정 모듈만 실행
+npx jest --testPathPatterns="notification"
+```
+
+| 모듈 | 유닛 테스트 | 통합 테스트 (supertest) |
+| :--- | :---------- | :---------------------- |
+| notification | Service (3건) | Controller API (2건) |
+| auth | Service (7건) | Controller API (5건) |
+| user | Service (9건) | - |
+
+---
+
 ## 실행
 
 ### 전제 조건
@@ -239,7 +292,9 @@
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
 PORT=3000
-JWT_SECRET_KEY="your_jwt_secret_key"
+JWT_ACCESS_SECRET="your_access_secret_key"
+JWT_REFRESH_SECRET="your_refresh_secret_key"
+CORS_ORIGIN="http://localhost:5173"
 
 AWS_ACCESS_KEY_ID="your_aws_access_key_id"
 AWS_SECRET_ACCESS_KEY="your_aws_secret_access_key"

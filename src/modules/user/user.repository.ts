@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma, Status, User } from '@prisma/client';
+import { PrismaClient, Prisma, Status, User, BoardType } from '@prisma/client';
 
 export class UserRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -104,7 +104,21 @@ export class UserRepository {
   }
 
   /**
-   * 11. 특정 아파트의 관리자 죄회
+   * 11. 아파트에 기본 Board 3개 생성 (NOTICE, COMPLAINT, POLL)
+   */
+  async createDefaultBoards(apartmentId: string, adminId: string) {
+    const boardTypes = [BoardType.NOTICE, BoardType.COMPLAINT, BoardType.POLL];
+    return await this.prisma.board.createMany({
+      data: boardTypes.map((boardType) => ({
+        apartmentId,
+        adminId,
+        boardType,
+      })),
+    });
+  }
+
+  /**
+   * 12. 특정 아파트의 관리자 조회
    */
   async findAdminsByApartmentId(apartmentId: string) {
     return await this.prisma.user.findMany({
