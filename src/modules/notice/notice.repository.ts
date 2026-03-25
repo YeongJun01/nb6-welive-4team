@@ -209,7 +209,7 @@ class NoticeRepository {
         notiType: 'NOTICE',
         title: data.title,
         content: data.content,
-        url: `/notice/${notice.id}`,
+        url: `/notices/${notice.id}`,
       };
 
       // 공지사항 수정 시 관리자에게 알림
