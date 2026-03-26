@@ -35,6 +35,7 @@ class NoticeService {
   private mapNoticeDetail = (data: any) => {
     return {
       ...this.mapNoticeUpdate(data),
+      content: data.content,
       boardName: '공지사항',
       comments: data.comments.map((comment: any) => ({
         id: comment.id,
