@@ -1,20 +1,3 @@
-// mock & spy 작업 순서
-//  Step 1: 의존성 모킹(Mocking) 설정 및 레이어 격리 이해
-// notice 생성 시 꼭 필요한 데이터 테이블 : user, board, notice, notification, event => 초기 셋팅
-
-//  Step 2: 테스트 슈트 구조 설계 및 환경 초기화
-// 테스트를 위한 Mock 및 Spy 생성, beforeAll, beforeEach, afterAll 셋팅
-
-//  Step 3: 핵심 비즈니스 로직(Happy Path) 검증
-// notice.service.ts 의 메서드 별로 정상 데이터를 이용해 테스트 진행
-// 각 메서드 별로 반환값, 상태 변화, 연관 모듈 호출 확인
-
-//  Step 4: 예외 상황(Edge Cases) 및 권한 검증
-// 고의로 잘못된 데이터를 입력하여 예외 상황(권한, 유효성, 존재 여부 등) 테스트
-
-//  Step 5: 데이터 매핑 및 최종 무결성 확인
-// 출력 된 최종 데이터 값에 대한 매핑 확인
-
 import complaintService from '../complaint.service';
 import complaintRepository, { userRepo, boardRepo } from '../complaint.repository';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../../lib/errors';
