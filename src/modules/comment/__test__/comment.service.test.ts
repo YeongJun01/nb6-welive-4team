@@ -69,12 +69,12 @@ describe('CommentService', () => {
   // updateComment
   it('댓글 수정 성공', async () => {
     // db에 comment-1이라는 댓글이 있다고 가정하고 반환
-    const comment = commentRepository.findById.mockResolvedValue({
+    commentRepository.findById.mockResolvedValue({
       id: 'comment-1',
       userId: 'user-1',
       content: '기존 댓글',
     });
-
+    // update 호출시 다음의 데이터 입력
     commentRepository.update.mockResolvedValue({
       id: 'comment-1',
       userId: 'user-1',
@@ -89,8 +89,10 @@ describe('CommentService', () => {
       boardType: CommentTargetType.COMPLAINT,
     });
 
-    expect(comment.content).toBe('기존 댓글');
     expect(result.comment.content).toBe('수정됨');
+    expect(result.board.boardType).toBe(CommentTargetType.COMPLAINT);
+    expect(result.board.id).toBe('c1');
+    expect(result.comment.writerName).toBe('홍길동');
   });
   it('작성자 아니면 수정 실패', async () => {
     commentRepository.findById.mockResolvedValue({
