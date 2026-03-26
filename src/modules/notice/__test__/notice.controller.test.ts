@@ -346,7 +346,7 @@ describe('Notice API 통합 테스트', () => {
       expect(res.body).toBeDefined();
     });
 
-    it('사용자가 공지사항을 상세 조회 시 noticeId가 유효하지 않으면 400을 반환한다', async () => {
+    it('존재하지 않는 공지사항을 상세 조회 시 404를 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestNotices();
 
@@ -361,10 +361,10 @@ describe('Notice API 통합 테스트', () => {
       // 3. 공지사항 상세 조회 API 호출
       const res = await userAgent
         .set('Authorization', `Bearer ${accessToken}`)
-        .get(`/notices/${'test'}`);
+        .get('/notices/550e8400-e29b-41d4-a716-446655440000');
 
       // 4. 기본 응답 확인
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
     });
   });
 

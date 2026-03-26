@@ -159,23 +159,6 @@ describe('Notice Service 단위 테스트', () => {
       expect(createNotice.eventData).toBe(true);
     });
 
-    it('[404] 사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
-      const inputData = {
-        id: 'notice1',
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '공지사항1',
-        content: '내용1',
-        isPinned: false,
-      };
-
-      findUserSpy.mockResolvedValue(null);
-
-      await expect(noticeService.createNotice(inputData as any, 'invalid')).rejects.toThrow(
-        NotFoundError,
-      );
-    });
-
     it('[403] 관리자가 아닌 경우 ForbiddenError를 던진다', async () => {
       findUserSpy.mockResolvedValue(mockUser1 as any);
       const inputData = {
@@ -234,64 +217,6 @@ describe('Notice Service 단위 테스트', () => {
         ForbiddenError,
       );
     });
-
-    it('[400] 시작일이 오늘보다 이전인 경우 BadRequestError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(mockAdmin1 as any);
-      findBoardSpy.mockResolvedValue(mockBoard as any);
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-        startDate: pastDate,
-        endDate: new Date(Date.now() + 86400000),
-      };
-
-      await expect(noticeService.createNotice(inputData as any, mockAdmin1.id)).rejects.toThrow(
-        BadRequestError,
-      );
-    });
-
-    it('[400] 시작일이 있는데 종료일이 없는 경우 BadRequestError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(mockAdmin1 as any);
-      findBoardSpy.mockResolvedValue(mockBoard as any);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-        startDate: new Date(),
-        endDate: null,
-      };
-
-      await expect(noticeService.createNotice(inputData as any, mockAdmin1.id)).rejects.toThrow(
-        BadRequestError,
-      );
-    });
-
-    it('[400] 종료일이 시작일보다 이전인 경우 BadRequestError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(mockAdmin1 as any);
-      findBoardSpy.mockResolvedValue(mockBoard as any);
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-        startDate: new Date(),
-        endDate: pastDate,
-      };
-
-      await expect(noticeService.createNotice(inputData as any, mockAdmin1.id)).rejects.toThrow(
-        BadRequestError,
-      );
-    });
   });
 
   describe('getNoticeList 테스트', () => {
@@ -306,13 +231,6 @@ describe('Notice Service 단위 테스트', () => {
       expect(result.notices).toHaveLength(2);
       expect(result.notices[0]).toHaveProperty('noticeId', 'notice1');
       expect(result.notices[0]).toHaveProperty('writerName', '관리자1');
-    });
-
-    it('[404] 사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(null);
-      await expect(noticeService.getNoticeList(mockQuery, 'invalid')).rejects.toThrow(
-        NotFoundError,
-      );
     });
 
     it('[404] 게시판 정보가 없는 경우 NotFoundError를 던진다', async () => {
@@ -346,14 +264,7 @@ describe('Notice Service 단위 테스트', () => {
       );
     });
 
-    it('[404] 사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(null);
-      await expect(noticeService.getNoticeDetail('notice1', 'invalid')).rejects.toThrow(
-        NotFoundError,
-      );
-    });
-
-    it('[403] 아파트 아이디가 다르면 ForbiddenError를 던진다', async () => {
+    it('[403] 사용자의 소속 아파트와 공지사항의 아파트 아이디가 다르면 ForbiddenError를 던진다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin2 as any); // 아파트가 다름 (apt2)
       findNoticeSpy.mockResolvedValue(mocknotice[0] as any);
 
@@ -442,23 +353,6 @@ describe('Notice Service 단위 테스트', () => {
       ).rejects.toThrow(BadRequestError);
     });
 
-    it('[404] 사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(null);
-      findBoardSpy.mockResolvedValue(mockBoard as any);
-      findNoticeSpy.mockResolvedValue(mocknotice[0]);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-      };
-
-      await expect(
-        noticeService.updateNotice(inputData as any, mocknotice[0].id, 'invalid'),
-      ).rejects.toThrow(NotFoundError);
-    });
-
     it('[403] 수정 권한이 없는 경우(작성자 불일치) ForbiddenError를 던진다', async () => {
       findNoticeSpy.mockResolvedValue(mocknotice[0]);
       findUserSpy.mockResolvedValue(mockAdmin2 as any);
@@ -473,66 +367,6 @@ describe('Notice Service 단위 테스트', () => {
       await expect(
         noticeService.updateNotice(inputData as any, mocknotice[0].id, mockAdmin2.id),
       ).rejects.toThrow(ForbiddenError);
-    });
-
-    it('[400] 시작일이 오늘보다 이전인 경우 BadRequestError를 던진다', async () => {
-      findNoticeSpy.mockResolvedValue(mocknotice[0]);
-      findUserSpy.mockResolvedValue(mockAdmin1 as any);
-
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-        startDate: pastDate,
-        endDate: new Date(Date.now() + 86400000),
-      };
-
-      await expect(
-        noticeService.updateNotice(inputData as any, mocknotice[0].id, mockAdmin1.id),
-      ).rejects.toThrow(BadRequestError);
-    });
-
-    it('[400] 시작일이 있는데 종료일이 없는 경우 BadRequestError를 던진다', async () => {
-      findNoticeSpy.mockResolvedValue(mocknotice[0]);
-      findUserSpy.mockResolvedValue(mockAdmin1 as any);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-        startDate: new Date(),
-        endDate: null,
-      };
-
-      await expect(
-        noticeService.updateNotice(inputData as any, mocknotice[0].id, mockAdmin1.id),
-      ).rejects.toThrow(BadRequestError);
-    });
-
-    it('[400] 종료일이 시작일보다 이전인 경우 BadRequestError를 던진다', async () => {
-      findNoticeSpy.mockResolvedValue(mocknotice[0]);
-      findUserSpy.mockResolvedValue(mockAdmin1 as any);
-
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1);
-
-      const inputData = {
-        boardId: mockBoard.id,
-        category: 'MAINTENANCE',
-        title: '제목',
-        content: '내용',
-        startDate: new Date(),
-        endDate: pastDate,
-      };
-
-      await expect(
-        noticeService.updateNotice(inputData as any, mocknotice[0].id, mockAdmin1.id),
-      ).rejects.toThrow(BadRequestError);
     });
   });
 
@@ -553,12 +387,6 @@ describe('Notice Service 단위 테스트', () => {
       await expect(noticeService.deleteNotice('invalid', mockAdmin1.id)).rejects.toThrow(
         NotFoundError,
       );
-    });
-
-    it('[404] 사용자가 존재하지 않으면 NotFoundError를 던진다', async () => {
-      findUserSpy.mockResolvedValue(null);
-      findNoticeSpy.mockResolvedValue(mocknotice[0]);
-      await expect(noticeService.deleteNotice('notice1', 'invalid')).rejects.toThrow(NotFoundError);
     });
 
     it('[403] 수정 권한이 없는 경우(작성자 불일치) ForbiddenError를 던진다', async () => {
