@@ -66,7 +66,7 @@ class ComplaintController {
 
     await complaintService.deleteComplaint(complaintId, userId);
 
-    res.status(201).json({ message: '정상적으로 민원 삭제 처리되었습니다' });
+    res.status(204).json({ message: '정상적으로 민원 삭제 처리되었습니다' });
   };
 }
 

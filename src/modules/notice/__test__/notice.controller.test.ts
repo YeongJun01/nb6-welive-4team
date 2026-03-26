@@ -321,7 +321,6 @@ describe('Notice API 통합 테스트', () => {
   });
 
   describe('GET /notices/:noticeId', () => {
-    // get + id : 정상, noticeid 오류,
     it('사용자가 공지사항을 상세 조회 시 viewCount가 1 증가한 후 200과 함께 세부 정보를 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestNotices();
