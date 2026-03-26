@@ -115,7 +115,7 @@ describe('Notice Service 단위 테스트', () => {
   });
 
   describe('createNotice 테스트', () => {
-    it('[200 / 기간 미존재] 모든 조건이 충족되면 공지사항 데이터를 생성한다', async () => {
+    it('[200 / 기간 미존재] 성공적으로 공지사항 데이터를 생성한다', async () => {
       const inputData = {
         id: 'notice1',
         boardId: mockBoard.id,
@@ -136,7 +136,7 @@ describe('Notice Service 단위 테스트', () => {
       expect(createNotice.eventData).toBe(false);
     });
 
-    it('[200 / 기간 존재] 모든 조건이 충족되면 공지사항과 함께 이벤트 데이터를 생성한다', async () => {
+    it('[200 / 기간 존재] 성공적으로 공지사항과 함께 이벤트 데이터를 생성한다', async () => {
       const inputData = {
         id: 'notice2',
         boardId: mockBoard.id,
@@ -220,7 +220,7 @@ describe('Notice Service 단위 테스트', () => {
   });
 
   describe('getNoticeList 테스트', () => {
-    it('[200] 모든 조건이 충족되면 가공된 공지사항 목록을 반환한다', async () => {
+    it('[200] 성공적으로 공지사항 목록을 반환한다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin1 as any);
       findBoardByApartmentIdSpy.mockResolvedValue(mockBoard as any);
       getNoticeListSpy.mockResolvedValue({ noticeList: mocknotice, totalCount: mocknotice.length });
@@ -228,7 +228,7 @@ describe('Notice Service 단위 테스트', () => {
       const result = await noticeService.getNoticeList(mockQuery, mockAdmin1.id);
 
       expect(result).toHaveProperty('totalCount', 2);
-      expect(result.notices).toHaveLength(2);
+      expect(result).toHaveProperty('notices', mocknotice);
       expect(result.notices[0]).toHaveProperty('noticeId', 'notice1');
       expect(result.notices[0]).toHaveProperty('writerName', '관리자1');
     });
@@ -244,7 +244,7 @@ describe('Notice Service 단위 테스트', () => {
   });
 
   describe('getNoticeDetail 테스트', () => {
-    it('[200] 모든 조건이 충족되면 가공된 공지사항 상세 정보를 반환한다', async () => {
+    it('[200] 성공적으로 공지사항 상세 정보를 반환한다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin1 as any);
       findNoticeSpy.mockResolvedValue(mocknotice[0] as any);
       getNoticeAndUpdateViewCountSpy.mockResolvedValue(mockNoticeWithComments as any);
@@ -275,7 +275,7 @@ describe('Notice Service 단위 테스트', () => {
   });
 
   describe('updateNotice 테스트', () => {
-    it('[200 / 기간 미존재] 모든 조건이 충족되면 공지사항 데이터를 수정한다', async () => {
+    it('[200 / 기간 미존재] 성공적으로 공지사항 데이터를 수정한다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin1 as any);
       findNoticeSpy.mockResolvedValue(mocknotice[0]);
       updateNoticeSpy.mockResolvedValue({ ...mocknotice[0], title: '수정된 제목' });
@@ -301,7 +301,7 @@ describe('Notice Service 단위 테스트', () => {
       expect(updateNoticeEventData).toBe(false);
     });
 
-    it('[200 / 기간 존재] 모든 조건이 충족되면 공지사항과 함께 이벤트 데이터를 생성한다', async () => {
+    it('[200 / 기간 존재] 성공적으로 공지사항과 함께 이벤트 데이터를 수정한다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin1 as any);
       findNoticeSpy.mockResolvedValue(mocknotice[0]);
       updateNoticeSpy.mockResolvedValue({ ...mocknotice[0], title: '수정된 제목' });
@@ -371,7 +371,7 @@ describe('Notice Service 단위 테스트', () => {
   });
 
   describe('deleteNotice 테스트', () => {
-    it('[204] 모든 조건이 충족되면 공지사항을 삭제한다', async () => {
+    it('[204] 성공적으로 공지사항을 삭제한다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin1 as any);
       findNoticeSpy.mockResolvedValue(mocknotice[0] as any);
       deleteNoticeSpy.mockResolvedValue(mocknotice[0] as any);
