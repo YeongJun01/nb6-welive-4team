@@ -100,11 +100,6 @@ export class UserService {
       finalApartmentId = newApartment.id;
     }
 
-    if (finalApartmentId && !data.role.includes('ADMIN')) {
-      const apartment = await this.userRepository.findApartmentById(finalApartmentId);
-      if (!apartment) throw new NotFoundError('존재하지 않는 아파트입니다.');
-    }
-
     // DB 저장
     const newUser = await this.userRepository.createUser({
       ...userData,
@@ -112,6 +107,16 @@ export class UserService {
       joinStatus: currentJoinStatus,
       apartment: finalApartmentId ? { connect: { id: finalApartmentId } } : undefined,
     });
+
+    // ADMIN 가입 시 기본 Board 3개 생성 (NOTICE, COMPLAINT, POLL)
+    if (data.role === 'ADMIN' && finalApartmentId) {
+      await this.userRepository.createDefaultBoards(finalApartmentId, newUser.id);
+    }
+
+    if (finalApartmentId && !data.role.includes('ADMIN')) {
+      const apartment = await this.userRepository.findApartmentById(finalApartmentId);
+      if (!apartment) throw new NotFoundError('존재하지 않는 아파트입니다.');
+    }
 
     // 입주민 명부에 userId 연결
     if (matchedResidentId) {

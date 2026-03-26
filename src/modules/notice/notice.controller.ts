@@ -48,7 +48,7 @@ class NoticeController {
 
     await noticeService.deleteNotice(noticeId, adminId);
 
-    res.status(200).json({ message: '정상적으로 삭제 처리되었습니다' });
+    res.status(204).json({ message: '정상적으로 삭제 처리되었습니다' });
   };
 }
 
