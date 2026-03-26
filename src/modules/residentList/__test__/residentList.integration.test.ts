@@ -213,6 +213,7 @@ describe('ResidentList 통합 테스트', () => {
     expect(residents[0].apartmentDong).toBe('101');
   });
   it('CSV 내부 세대주 중복이면 에러', async () => {
+    // parseCsv가 호출되면 다음의 데이터를 반환
     (csvModule.parseCsv as jest.Mock).mockResolvedValue([
       {
         동: '101',
