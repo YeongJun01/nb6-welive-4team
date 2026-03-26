@@ -212,25 +212,27 @@ export class ResidentListService {
       throw new NotFoundError('입주민을 찾을 수 없습니다.');
     }
 
-    await this.residentListRepository.updateResident(residentId, data);
+    const updatedResident = await this.residentListRepository.updateResident(residentId, data);
 
     const result = {
       id: resident.id,
       userId: resident.userId,
       apartmentId: resident.apartmentId,
-      building: resident.apartmentDong,
-      unitNumber: resident.apartmentHo,
-      contact: resident.contact,
-      name: resident.name,
+      building: updatedResident.apartmentDong,
+      unitNumber: updatedResident.apartmentHo,
+      contact: updatedResident.contact,
+      name: updatedResident.name,
       //email: resident.email,
       residenceStatus: resident.isRegistered
         ? ResidentStatus.RESIDENCE
         : ResidentStatus.NO_RESIDENCE,
-      isHouseholder: resident.isHouseholder ? IsHouseholder.HOUSEHOLDER : IsHouseholder.MEMBER,
+      isHouseholder: updatedResident.isHouseholder
+        ? IsHouseholder.HOUSEHOLDER
+        : IsHouseholder.MEMBER,
       isRegistered: resident.isRegistered,
       approvalStatus: resident.approvalStatus,
       createdAt: resident.createdAt,
-      updatedAt: resident.updatedAt,
+      updatedAt: updatedResident.updatedAt,
     };
 
     return result;
