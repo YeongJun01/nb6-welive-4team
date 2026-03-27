@@ -394,8 +394,6 @@ describe('Poll API 통합 테스트', () => {
         where: { pollId: testPoll1.id },
       });
 
-      console.log(updatedEvent);
-
       expect(newPollOptions.length).toBe(2);
       expect(newPollOptions[0].content).toBe('수정된 옵션1');
       expect(updatedEvent!.title).toBe('수정된 투표 제목');
