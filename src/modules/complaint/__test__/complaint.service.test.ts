@@ -3,7 +3,25 @@ import complaintRepository, { userRepo, boardRepo } from '../complaint.repositor
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../../lib/errors';
 
 // [초기 셋팅] 의존 모듈 Mock 처리 : complaint, notification
-jest.mock('../complaint.repository');
+jest.mock('../complaint.repository', () => ({
+  __esModule: true,
+  default: {
+    createComplaint: jest.fn(),
+    getComplaintList: jest.fn(),
+    getComplaintById: jest.fn(),
+    getComplaintAndUpdateViewCount: jest.fn(),
+    updateComplaint: jest.fn(),
+    updateComplaintStatus: jest.fn(),
+    deleteComplaint: jest.fn(),
+  },
+  userRepo: {
+    getUserInfo: jest.fn(),
+  },
+  boardRepo: {
+    getBoardById: jest.fn(),
+    getBoardByApartmentId: jest.fn(),
+  },
+}));
 jest.mock('../../notification/notification.service');
 
 describe('Complaint Service 단위 테스트', () => {
