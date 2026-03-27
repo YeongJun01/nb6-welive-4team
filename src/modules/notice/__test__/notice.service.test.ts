@@ -228,9 +228,10 @@ describe('Notice Service 단위 테스트', () => {
       const result = await noticeService.getNoticeList(mockQuery, mockAdmin1.id);
 
       expect(result).toHaveProperty('totalCount', 2);
-      expect(result).toHaveProperty('notices', mocknotice);
+      expect(result.notices).toHaveLength(2);
       expect(result.notices[0]).toHaveProperty('noticeId', 'notice1');
       expect(result.notices[0]).toHaveProperty('writerName', '관리자1');
+      expect(result.notices[0]).toHaveProperty('commentsCount', 2);
     });
 
     it('[404] 게시판 정보가 없는 경우 NotFoundError를 던진다', async () => {
