@@ -1,10 +1,16 @@
 import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
 import { Request } from 'express';
 
 // 첨부파일 저장 경로
 const UPLOAD_DIR = path.resolve(__dirname, '../../public/uploads');
+
+// 확인 후 폴더가 없다면 생성
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
 // 허용 확장자 (첨부파일용)
 const ALLOWED_EXT = [
