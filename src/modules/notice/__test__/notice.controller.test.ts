@@ -257,7 +257,7 @@ describe('Notice API 통합 테스트', () => {
   });
 
   describe('GET /notices', () => {
-    it('사용자가 공지사항 목록을 조회 시 쿼리를 사용하지 않으면 200과 함께 전체 목록을 반환한다', async () => {
+    it('공지사항 목록 조회 시 쿼리를 사용하지 않으면 200과 함께 전체 목록을 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestNotices();
 
@@ -279,7 +279,7 @@ describe('Notice API 통합 테스트', () => {
       expect(res.body.totalCount).toBe(noticeCount);
     });
 
-    it('사용자가 공지사항 목록을 조회 시 정상 쿼리를 사용하면 200과 함께 쿼리에 맞는 목록을 반환한다', async () => {
+    it('공지사항 목록 조회 시 정상 쿼리를 사용하면 200과 함께 쿼리에 맞는 목록을 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestNotices();
 
@@ -302,7 +302,7 @@ describe('Notice API 통합 테스트', () => {
       expect(res.body.notices.length).toBe(1);
     });
 
-    it('사용자가 공지사항 목록을 조회 시 쿼리값에 오류가 있으면 400을 반환한다', async () => {
+    it('공지사항 목록 조회 시 쿼리값에 오류가 있으면 400을 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestNotices();
 
@@ -326,7 +326,7 @@ describe('Notice API 통합 테스트', () => {
   });
 
   describe('GET /notices/:noticeId', () => {
-    it('사용자가 공지사항을 상세 조회 시 viewCount가 1 증가한 후 200과 함께 세부 정보를 반환한다', async () => {
+    it('공지사항을 상세 조회 시 viewCount가 1 증가한 후 200과 함께 세부 정보를 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestNotices();
       const testNotice = await prisma.notice.findFirst();
@@ -347,7 +347,7 @@ describe('Notice API 통합 테스트', () => {
       // 4. 기본 응답 확인
       expect(res.status).toBe(200);
       expect(res.body.viewsCount).toBe(testNotice!.viewCount + 1);
-      expect(res.body).toBeDefined();
+      expect(res.body.title).toBe(testNotice!.title);
     });
 
     it('존재하지 않는 공지사항을 상세 조회 시 404를 반환한다', async () => {
