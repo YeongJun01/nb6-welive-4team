@@ -116,7 +116,7 @@ class PollService {
     }
 
     // 게시판 정보, 타입, 게시 권한 확인
-    const board = await boardRepo.getBoardInfoByApartmentId(admin.apartmentId!);
+    const board = await boardRepo.getBoardById(data.boardId);
     if (!board) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
     }
@@ -219,6 +219,8 @@ class PollService {
       throw new ForbiddenError('투표 조회 권한이 없습니다');
     }
 
+    // 현재 API 명세에는 ViewCount가 없지만 향후 추가될 것을 염두하여 사전 작업 진행
+    // 필요 한 경우 데이터 리팩토링(mapPollInfo)시 viewCount 항목만 추가하면 됨
     const pollDetail = await pollRepository.getPollAndUpdateViewCount(pollId);
     const poll = this.mapPollInfo(pollDetail);
 
