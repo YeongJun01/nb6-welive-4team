@@ -10,8 +10,7 @@ describe('Poll API 통합 테스트', () => {
   const userAgent = request.agent(app);
   const adminAgent = request.agent(app);
 
-  let testApartment1: any;
-  let testApartment2: any;
+  let testApartment: any;
   let testAdmin: any;
   let testUser: any;
   let testBoard: any;
@@ -34,26 +33,12 @@ describe('Poll API 통합 테스트', () => {
     await prisma.apartment.deleteMany();
 
     // 1. 테스트용 아파트 생성
-    testApartment1 = await prisma.apartment.create({
+    testApartment = await prisma.apartment.create({
       data: {
         name: '테스트 아파트 poll',
         address: '서울시 강남구 poll',
         officeNumber: '021234567poll',
         description: '테스트용 아파트입니다 poll',
-        endComplexNumber: 1,
-        endBuildingNumber: 1,
-        endFloorNumber: 1,
-        endUnitNumber: 1,
-        apartmentStatus: 'APPROVED',
-      },
-    });
-
-    testApartment2 = await prisma.apartment.create({
-      data: {
-        name: '테스트 아파트2 poll',
-        address: '서울시 강남구2 poll',
-        officeNumber: '021234568poll',
-        description: '테스트용 아파트입니다2 poll',
         endComplexNumber: 1,
         endBuildingNumber: 1,
         endFloorNumber: 1,
@@ -73,7 +58,7 @@ describe('Poll API 통합 테스트', () => {
         contact: '01012345678poll',
         role: 'ADMIN',
         joinStatus: 'APPROVED',
-        apartmentId: testApartment1.id,
+        apartmentId: testApartment.id,
       },
     });
 
@@ -86,10 +71,10 @@ describe('Poll API 통합 테스트', () => {
         contact: '01087654321poll',
         role: 'USER',
         joinStatus: 'APPROVED',
-        apartmentId: testApartment1.id,
+        apartmentId: testApartment.id,
         residentLists: {
           create: {
-            apartmentId: testApartment1.id,
+            apartmentId: testApartment.id,
             apartmentDong: '101',
             apartmentHo: '101',
             contact: '01087654321poll',
@@ -104,7 +89,7 @@ describe('Poll API 통합 테스트', () => {
     testBoard = await prisma.board.create({
       data: {
         adminId: testAdmin.id,
-        apartmentId: testApartment1.id,
+        apartmentId: testApartment.id,
         boardType: 'POLL',
       },
     });
