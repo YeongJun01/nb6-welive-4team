@@ -31,6 +31,18 @@ class VoteService {
       throw new ForbiddenError('투표 권한이 없습니다.');
     }
 
+    // 투표권한 체크: 동별 권한 제한 확인
+    const { buildingPermission } = pollDetail.poll;
+    const userDong = user.residentLists?.apartmentDong;
+
+    if (!userDong) {
+      throw new ForbiddenError('입주민 정보가 등록되지 않아 투표할 수 없습니다.');
+    }
+
+    if (!buildingPermission.includes('ALL') && !buildingPermission.includes(userDong)) {
+      throw new ForbiddenError('해당 동은 투표 권한이 없습니다.');
+    }
+
     return pollDetail;
   };
 
