@@ -19,7 +19,7 @@ class VoteController {
     const userId = req.user!.id;
 
     await voteService.deleteVote(optionId, userId);
-    res.status(201).json({ message: '정상적으로 투표가 취소되었습니다' });
+    res.status(204).json({ message: '정상적으로 투표가 취소되었습니다' });
   };
 }
 
