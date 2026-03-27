@@ -49,7 +49,7 @@ class PollController {
     const adminId = req.user!.id;
 
     await pollService.deletePoll(pollId, adminId);
-    res.status(200).json({ message: '정상적으로 투표 삭제 처리되었습니다' });
+    res.status(204).json({ message: '정상적으로 투표 삭제 처리되었습니다' });
   };
 }
 

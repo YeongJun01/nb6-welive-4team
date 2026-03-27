@@ -299,6 +299,9 @@ class PollRepository {
         where: { id: pollId },
         data: {
           deletedAt: new Date(),
+          pollOptions: {
+            deleteMany: {},
+          },
         },
       });
 

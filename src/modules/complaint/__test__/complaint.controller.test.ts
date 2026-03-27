@@ -257,7 +257,7 @@ describe('Complaint API 통합 테스트', () => {
   });
 
   describe('GET /complaints', () => {
-    it('사용자가 민원 목록을 조회하는 경우 쿼리를 사용하지 않으면 200과 함께 민원 목록을 반환한다', async () => {
+    it('민원 목록 조회 시 쿼리를 사용하지 않으면 200과 함께 민원 목록을 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestComplaints();
 
@@ -279,7 +279,7 @@ describe('Complaint API 통합 테스트', () => {
       expect(res.body.totalCount).toBe(complaintCount);
     });
 
-    it('사용자가 민원 목록을 조회하는 경우 정상 쿼리를 사용하면 200과 함께 민원 목록을 반환한다', async () => {
+    it('민원 목록 조회 시 정상 쿼리를 사용하면 200과 함께 쿼리에 맞는 목록을 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestComplaints();
 
@@ -310,7 +310,7 @@ describe('Complaint API 통합 테스트', () => {
   });
 
   describe('GET /complaints/:complaintId', () => {
-    it('사용자가 본인의 민원 상세 정보를 조회하면 viewCount가 1 증가 후 200과 함께 세부 정보를 반환한다', async () => {
+    it('민원 상세 정보를 조회하면 viewCount가 1 증가 후 200과 함께 세부 정보를 반환한다', async () => {
       // 1. 테스트 데이터 준비
       await createTestComplaints();
 
@@ -328,7 +328,7 @@ describe('Complaint API 통합 테스트', () => {
       // 4. 기본 응답 확인
       expect(res.status).toBe(200);
       expect(res.body.viewsCount).toBe(testComplaint1.viewCount + 1);
-      expect(res.body).toBeDefined();
+      expect(res.body.title).toBe(testComplaint1.title);
     });
 
     it('존재하지 않는 민원을 상세 조회하면 404를 반환한다', async () => {
