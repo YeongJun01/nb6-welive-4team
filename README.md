@@ -1,11 +1,10 @@
-# Welive API Server (Apartment Community Platform)
+# WeLive API Server (Apartment Community Platform)
 
 ## 개요
 
-- 이 프로젝트는 아파트 단지 관리 및 입주민 간 소통을 위한 **'Welive'** 애플리케이션의 백엔드 API 서버입니다.
-- Node.js, Express, TypeScript를 기반으로 구축되었습니다.
-- IoC(Inversion of Control) 원칙을 적용하기 위해 **InversifyJS** 프레임워크를 도입하여 계층 간 결합도를 낮추고, 코드의 유연성과 테스트/유지보수 용이성을 높였습니다.
-- Prisma ORM을 통해 PostgreSQL 데이터베이스와 상호작용하며, **Feature-based Modular Architecture**를 채택하여 기능별로 독립적인 모듈을 구성합니다.
+아파트 단지 관리 및 입주민 간 소통을 위한 **WeLive** 백엔드 API 서버입니다.
+Node.js, Express v5, TypeScript를 기반으로 구축되었으며, Prisma ORM을 통해 PostgreSQL과 상호작용합니다.
+**Feature-based Modular Architecture**를 채택하여 기능별로 독립적인 모듈을 구성하고, 각 모듈의 라우터에서 수동 생성자 주입(Manual DI)으로 계층 간 의존성을 조립합니다.
 
 ### 주요 기술
 
@@ -13,155 +12,182 @@
 - **언어:** TypeScript
 - **Database:** PostgreSQL
 - **ORM:** Prisma
-- **DI (Dependency Injection):** InversifyJS, reflect-metadata
-- **인증:** JWT (jsonwebtoken), bcrypt, Cookie 기반 토큰 관리
-- **Validation:** superstruct, class-validator, class-transformer, express-validator
-- **파일 업로드:** Multer, AWS S3 (multer-s3)
-- **실시간 통신:** Socket.io
+- **인증:** JWT (jsonwebtoken), bcrypt, HttpOnly Cookie 기반 Refresh Token
+- **Validation:** Superstruct (런타임 구조 검증)
+- **파일 업로드:** Multer (CSV 업로드), AWS S3 (multer-s3)
+- **실시간 통신:** Socket.io + SSE (Server-Sent Events)
+- **스케줄링:** node-cron (투표 상태 자동 변경)
 - **API 문서화:** Swagger (swagger-jsdoc, swagger-ui-express)
 - **Infrastructure:** AWS (EC2, S3, RDS), Nginx, PM2
 
-### 주요 라이브러리
-
-`package.json`을 기준으로 한 주요 의존성 라이브러리는 다음과 같습니다.
-
-- **`@prisma/client`**: Prisma 클라이언트 (데이터베이스 쿼리용)
-- **`express`**: 웹 프레임워크
-- **`typescript`**: 타입스크립트 언어 지원
-- **`inversify`**: 의존성 주입(DI) 컨테이너
-- **`reflect-metadata`**: 데코레이터 메타데이터를 분석하기 위한 라이브러리 (InversifyJS 필수 의존성)
-- **`jsonwebtoken`**: JWT 기반 인증 토큰 생성 및 검증
-- **`bcrypt`**: 비밀번호 해싱
-- **`superstruct`**: 런타임 데이터 구조 유효성 검사
-- **`class-validator`**, **`class-transformer`**: DTO 클래스 기반 데이터 유효성 검사 및 변환
-- **`multer`**, **`multer-s3`**: 파일 업로드 처리 (로컬 및 S3 지원)
-- **`socket.io`**: 실시간 양방향 통신 (알림 기능)
-- **`cookie-parser`**: Cookie 기반 토큰 파싱
-
 ---
 
-## 아키텍처 (Feature-based Modular + DI)
+## 아키텍처 (Feature-based Modular + Manual DI)
 
-본 프로젝트는 기능 단위로 모듈을 분리하는 **Feature-based Modular Architecture**와 **DI 컨테이너**를 결합하여, 계층별 역할을 명확히 분리한 구조를 따릅니다.
+기능 단위로 모듈을 분리하고, 각 모듈의 **라우터 파일에서 수동으로 의존성을 조립**하는 구조입니다.
 
-1. **모듈 구조 (`src/modules/`)**
-   - 각 기능(auth, user, complaint, poll 등)은 독립적인 폴더 아래에 `controller`, `service`, `repository`, `router`를 함께 배치합니다.
-   - 모듈 간 결합도를 최소화하여 기능 추가/수정/삭제가 다른 모듈에 영향을 주지 않도록 설계합니다.
+```
+Router (라우트 정의, 수동 DI 조립)
+  → Controller (HTTP 요청/응답, Superstruct 검증)
+    → Service (비즈니스 로직)
+      → Repository (Prisma 데이터베이스 접근)
+```
 
-2. **의존성 주입 (`InversifyJS`)**
-   - 주입 가능한 모든 클래스(`Service`, `Repository`, `Controller`)는 `@injectable()` 데코레이터를 가져야 합니다.
-   - 의존성은 생성자 주입을 원칙으로 합니다.
-   - 일부 모듈은 라우터 내에서 직접 인스턴스를 생성하는 방식도 병행합니다.
+### 계층별 역할
 
-3. **라우터 계층 (`*.router.ts`)**
-   - 각 모듈의 라우터 파일은 컨트롤러 인스턴스를 생성(또는 DI 컨테이너에서 주입)받아 Express 경로에 바인딩합니다.
-   - `asyncHandler` 미들웨어로 감싸 비동기 에러를 중앙 에러 핸들러로 전달합니다.
+- **Router (`*.router.ts`)**: Repository → Service → Controller 인스턴스를 생성자 주입으로 조립하고, Express 라우트에 바인딩합니다.
+- **Controller (`*.controller.ts`)**: HTTP 요청 데이터를 Superstruct로 검증하고, Service에 위임한 뒤 응답을 반환합니다.
+- **Service (`*.service.ts`)**: 핵심 비즈니스 로직을 처리하며, 커스텀 에러를 throw합니다.
+- **Repository (`*.repository.ts`)**: Prisma Client를 통해 데이터베이스 CRUD만 담당합니다.
 
-4. **애플리케이션 진입점 (`src/app.ts` / `src/main.ts`)**
-   - `app.ts`: CORS, JSON 파서, Cookie 파서 등 글로벌 미들웨어를 설정하고, 각 모듈 라우터를 API 경로에 등록합니다.
-   - `main.ts`: 서버를 실제로 실행하는 진입점입니다.
+### 진입점
 
-5. **계층별 역할**
-   - **`Controllers`**: HTTP 요청/응답 처리. 요청 데이터를 검증하고 `Service`에 위임한 뒤 결과를 응답합니다.
-   - **`Services`**: 핵심 비즈니스 로직. 여러 `Repository`를 조합하여 복잡한 작업을 처리합니다.
-   - **`Repositories`**: 데이터베이스 접근(CRUD)만 담당. Prisma Client를 통해 특정 데이터 모델을 조작합니다.
+- `src/main.ts` — HTTP 서버 생성, Socket.io 초기화, 크론잡 설정
+- `src/app.ts` — Express 앱 설정, 글로벌 미들웨어 등록, 모듈 라우터 마운트
+
+### 인증 흐름
+
+- **Access Token** (1시간): `Authorization: Bearer <token>` 헤더로 전달
+- **Refresh Token** (7일): HttpOnly 쿠키로 관리
+- `authMiddleware`가 JWT에서 `userId`를 추출하여 `req.user.id`에 할당
+- 가입 상태 흐름: `PENDING` → `APPROVED` / `REJECTED` / `NEED_UPDATE`
+
+### 실시간 알림
+
+Socket.io 푸시 이벤트 + SSE 엔드포인트(`/notifications/sse`, 30초 폴링) 이중 구조.
+알림 타입: 공지사항, 민원 상태 변경, 투표 생성/시작/종료, 회원가입 요청 등.
 
 ---
 
 ## 주요 기능
 
-- **입주민 인증**: 로그인, 로그아웃, JWT 기반 Access/Refresh Token 관리
-- **사용자 관리**: 회원가입(입주민 명부 기반 유효성 검사), 프로필 수정, 비밀번호 변경, 가입 승인 상태 관리, 거절된 사용자 삭제
-- **아파트 정보 관리**: 단지 정보(이름, 주소, 연락처), 동/호수 범위 설정
-- **입주민 명부(ResidentList)**: 사전 등록된 입주민 정보 기반 회원가입 유효성 검사
-- **민원(Complaint) 관리**: 민원 접수, 조회, 수정, 삭제, 상태 변경(대기/처리 중/완료)
-- **투표(Poll) 관리**: 투표 생성, 목록/상세 조회, 수정, 삭제
-- **투표 참여(Vote)**: 투표 옵션에 투표, 투표 취소
-- **실시간 알림(Notification)**: Socket.io + SSE(30초 폴링) 기반 실시간 알림 전달
-  - 회원가입 신청 알림 (관리자 가입→슈퍼관리자, 입주민 가입→관리자)
-  - 민원 등록/상태 변경 알림
-  - 공지사항 등록 알림
-  - 투표 생성/시작/종료 알림
-- **이벤트 관리**: 일정 관리 기능
-- **공지사항 관리**: 공지 등록, 조회, 수정, 삭제
-- **댓글 관리**: 민원/공지에 대한 댓글 기능
+- **인증**: 로그인, 로그아웃, JWT Access/Refresh Token 관리
+- **회원가입**: 입주민/관리자/슈퍼관리자 회원가입 (입주민 명부 기반 검증)
+- **사용자 관리**: 프로필 수정, 비밀번호 변경
+- **관리자 관리**: 관리자 승인/거절, 정보 수정, 삭제
+- **입주민 관리**: 입주민 승인/거절, 거절된 사용자 일괄 삭제
+- **아파트 정보**: 단지 정보 조회 (공개/인증 구분)
+- **입주민 명부 (ResidentList)**: CRUD, CSV 업로드/다운로드, 템플릿 다운로드
+- **민원 (Complaint)**: 접수, 조회, 수정, 삭제, 상태 변경 (PENDING → IN_PROGRESS → RESOLVED/REJECTED)
+- **투표 (Poll)**: 생성, 목록/상세 조회, 수정, 삭제, 상태 자동 변경 (cron)
+- **투표 참여 (Vote)**: 옵션 선택, 투표 취소
+- **공지사항 (Notice)**: 등록, 조회, 수정, 삭제
+- **댓글 (Comment)**: 민원/공지에 대한 댓글 작성, 수정, 삭제
+- **이벤트 (Event)**: 일정 목록 조회 (Poll/Notice 생성 시 자동 생성)
+- **실시간 알림 (Notification)**: Socket.io + SSE 기반 실시간 알림, 읽음 처리
 
 ---
 
 ## API Endpoints
 
-- API 기본 경로: `http://localhost:3000`
+- 기본 URL: `http://localhost:3000`
 
-#### 🔐 인증 (Auth) - `/api/auth`
+### 🔐 인증 (Auth) — `/auth`
 
-| Method | Endpoint    | 인증 | 설명                            |
-| :----- | :---------- | :--: | :------------------------------ |
-| `POST` | `/login`    |  X   | 이메일/비밀번호로 로그인        |
-| `POST` | `/refresh`  |  X   | Access Token 갱신               |
-| `POST` | `/logout`   |  O   | 로그아웃 (토큰 비활성화)        |
+| Method   | Endpoint                        | 인증 | 설명                       |
+| :------- | :------------------------------ | :--: | :------------------------- |
+| `POST`   | `/login`                        |  X   | 로그인                     |
+| `POST`   | `/refresh`                      |  X   | Access Token 갱신          |
+| `POST`   | `/logout`                       |  X   | 로그아웃                   |
+| `POST`   | `/signup`                       |  X   | 입주민 회원가입            |
+| `POST`   | `/signup/admin`                 |  X   | 관리자 회원가입            |
+| `POST`   | `/signup/super-admin`           |  X   | 슈퍼관리자 회원가입        |
+| `PATCH`  | `/admins/status`                |  O   | 관리자 승인 상태 일괄 변경 |
+| `PATCH`  | `/admins/:adminId/status`       |  O   | 관리자 승인 상태 변경      |
+| `PATCH`  | `/admins/:adminId`              |  O   | 관리자 정보 수정           |
+| `DELETE` | `/admins/:adminId`              |  O   | 관리자 삭제                |
+| `PATCH`  | `/residents/status`             |  O   | 입주민 승인 상태 일괄 변경 |
+| `PATCH`  | `/residents/:residentId/status` |  O   | 입주민 승인 상태 변경      |
+| `POST`   | `/cleanup`                      |  O   | 거절된 사용자 삭제         |
 
-#### 👤 사용자 (Users) - `/api/users`
+### 👤 사용자 (Users) — `/users`
 
-| Method   | Endpoint        | 인증 | 설명                                |
-| :------- | :-------------- | :--: | :---------------------------------- |
-| `POST`   | `/signup`       |  O   | 입주민 명부 기반 회원가입           |
-| `PATCH`  | `/profile`      |  O   | 프로필 정보 수정                    |
-| `PATCH`  | `/password`     |  O   | 비밀번호 변경                       |
-| `PATCH`  | `/join-status`  |  O   | 가입 승인 상태 변경 (관리자)        |
-| `DELETE` | `/rejected`     |  O   | 거절된 사용자 삭제 (관리자)         |
+| Method  | Endpoint    | 인증 | 설명             |
+| :------ | :---------- | :--: | :--------------- |
+| `PATCH` | `/me`       |  O   | 프로필 정보 수정 |
+| `PATCH` | `/password` |  O   | 비밀번호 변경    |
 
-#### 📋 민원 (Complaints) - `/complaints`
+### 🏢 아파트 (Apartments) — `/apartments`
 
-| Method   | Endpoint                       | 인증 | 설명                          |
-| :------- | :----------------------------- | :--: | :---------------------------- |
-| `POST`   | `/`                            |  O   | 민원 접수                     |
-| `GET`    | `/`                            |  X   | 민원 목록 조회                |
-| `GET`    | `/:complaintId`                |  X   | 민원 상세 조회                |
-| `PATCH`  | `/:complaintId`                |  O   | 민원 내용 수정                |
-| `PATCH`  | `/:complaintId/status`         |  O   | 민원 처리 상태 변경           |
-| `DELETE` | `/:complaintId`                |  O   | 민원 삭제                     |
+| Method | Endpoint      | 인증 | 설명                    |
+| :----- | :------------ | :--: | :---------------------- |
+| `GET`  | `/public`     |  X   | 아파트 목록 조회 (공개) |
+| `GET`  | `/public/:id` |  X   | 아파트 상세 조회 (공개) |
+| `GET`  | `/`           |  O   | 아파트 목록 조회        |
+| `GET`  | `/:id`        |  O   | 아파트 상세 조회        |
 
-#### 🗳️ 투표 게시판 (Polls) - `/polls`
+### 📋 입주민 명부 (ResidentList) — `/residents`
 
-| Method   | Endpoint      | 인증 | 설명                |
-| :------- | :------------ | :--: | :------------------ |
-| `POST`   | `/`           |  O   | 투표 생성           |
-| `GET`    | `/`           |  X   | 투표 목록 조회      |
-| `GET`    | `/:pollId`    |  X   | 투표 상세 조회      |
-| `PATCH`  | `/:pollId`    |  O   | 투표 수정           |
-| `DELETE` | `/:pollId`    |  O   | 투표 삭제           |
+| Method   | Endpoint         | 인증 | 설명                        |
+| :------- | :--------------- | :--: | :-------------------------- |
+| `GET`    | `/`              |  O   | 입주민 명부 목록 조회       |
+| `POST`   | `/`              |  O   | 입주민 등록                 |
+| `POST`   | `/from-file`     |  O   | CSV 파일로 입주민 일괄 등록 |
+| `GET`    | `/file/template` |  O   | CSV 템플릿 다운로드         |
+| `GET`    | `/file`          |  O   | 입주민 명부 CSV 다운로드    |
+| `GET`    | `/:id`           |  O   | 입주민 상세 조회            |
+| `PATCH`  | `/:id`           |  O   | 입주민 정보 수정            |
+| `DELETE` | `/:id`           |  O   | 입주민 삭제                 |
+| `PUT`    | `/:id`           |  O   | 입주민 소프트 삭제          |
 
-#### ✅ 투표 참여 (Votes) - `/options`
+### 📋 민원 (Complaints) — `/complaints`
 
-| Method   | Endpoint              | 인증 | 설명              |
-| :------- | :-------------------- | :--: | :---------------- |
-| `POST`   | `/:optionId/vote`     |  O   | 투표 옵션 선택    |
-| `DELETE` | `/:optionId/vote`     |  O   | 투표 취소         |
+| Method   | Endpoint               | 인증 | 설명           |
+| :------- | :--------------------- | :--: | :------------- |
+| `POST`   | `/`                    |  O   | 민원 접수      |
+| `GET`    | `/`                    |  O   | 민원 목록 조회 |
+| `GET`    | `/:complaintId`        |  O   | 민원 상세 조회 |
+| `PATCH`  | `/:complaintId`        |  O   | 민원 내용 수정 |
+| `PATCH`  | `/:complaintId/status` |  O   | 민원 상태 변경 |
+| `DELETE` | `/:complaintId`        |  O   | 민원 삭제      |
 
-#### 🔔 알림 (Notifications) - `/notifications`
+### 🗳️ 투표 게시판 (Polls) — `/polls`
 
-| Method  | Endpoint                   | 인증 | 설명                                    |
-| :------ | :------------------------- | :--: | :-------------------------------------- |
-| `GET`   | `/sse`                     |  O   | 읽지 않은 알림 실시간 수신 (SSE, 30초)  |
-| `PATCH` | `/:notificationId/read`    |  O   | 알림 읽음 처리                          |
+| Method   | Endpoint   | 인증 | 설명           |
+| :------- | :--------- | :--: | :------------- |
+| `POST`   | `/`        |  O   | 투표 생성      |
+| `GET`    | `/`        |  O   | 투표 목록 조회 |
+| `GET`    | `/:pollId` |  O   | 투표 상세 조회 |
+| `PATCH`  | `/:pollId` |  O   | 투표 수정      |
+| `DELETE` | `/:pollId` |  O   | 투표 삭제      |
 
-#### 📢 공지사항 (Notices) - `/notices`
+### ✅ 투표 참여 (Votes) — `/options`
 
-| Method   | Endpoint       | 인증 | 설명              |
-| :------- | :------------- | :--: | :---------------- |
-| `POST`   | `/`            |  O   | 공지사항 등록     |
-| `GET`    | `/`            |  O   | 공지사항 목록 조회 |
-| `GET`    | `/:noticeId`   |  O   | 공지사항 상세 조회 |
-| `PATCH`  | `/:noticeId`   |  O   | 공지사항 수정     |
-| `DELETE` | `/:noticeId`   |  O   | 공지사항 삭제     |
+| Method   | Endpoint          | 인증 | 설명           |
+| :------- | :---------------- | :--: | :------------- |
+| `POST`   | `/:optionId/vote` |  O   | 투표 옵션 선택 |
+| `DELETE` | `/:optionId/vote` |  O   | 투표 취소      |
 
-#### 💬 댓글 (Comments) - `/comments`
+### 📢 공지사항 (Notices) — `/notices`
 
-| Method   | Endpoint  | 인증 | 설명        |
-| :------- | :-------- | :--: | :---------- |
-| `POST`   | `/`       |  O   | 댓글 작성   |
-| `PATCH`  | `/:id`    |  O   | 댓글 수정   |
-| `DELETE` | `/:id`    |  O   | 댓글 삭제   |
+| Method   | Endpoint     | 인증 | 설명               |
+| :------- | :----------- | :--: | :----------------- |
+| `POST`   | `/`          |  O   | 공지사항 등록      |
+| `GET`    | `/`          |  O   | 공지사항 목록 조회 |
+| `GET`    | `/:noticeId` |  O   | 공지사항 상세 조회 |
+| `PATCH`  | `/:noticeId` |  O   | 공지사항 수정      |
+| `DELETE` | `/:noticeId` |  O   | 공지사항 삭제      |
+
+### 💬 댓글 (Comments) — `/comments`
+
+| Method   | Endpoint | 인증 | 설명      |
+| :------- | :------- | :--: | :-------- |
+| `POST`   | `/`      |  O   | 댓글 작성 |
+| `PATCH`  | `/:id`   |  O   | 댓글 수정 |
+| `DELETE` | `/:id`   |  O   | 댓글 삭제 |
+
+### 🔔 알림 (Notifications) — `/notifications`
+
+| Method  | Endpoint                | 인증 | 설명                                   |
+| :------ | :---------------------- | :--: | :------------------------------------- |
+| `GET`   | `/sse`                  |  O   | 읽지 않은 알림 실시간 수신 (SSE, 30초) |
+| `PATCH` | `/:notificationId/read` |  O   | 알림 읽음 처리                         |
+
+### 📅 이벤트 (Events) — `/events`
+
+| Method | Endpoint | 인증 | 설명             |
+| :----- | :------- | :--: | :--------------- |
+| `GET`  | `/`      |  O   | 이벤트 목록 조회 |
 
 ---
 
@@ -170,112 +196,43 @@
 ```
 .
 ├── prisma/
-│   ├── migrations/          # 데이터베이스 마이그레이션 파일
-│   ├── schema.prisma        # 데이터 모델 정의
-│   └── seed.mjs             # 초기 데이터 시드
+│   ├── migrations/            # 데이터베이스 마이그레이션
+│   ├── schema.prisma          # 데이터 모델 정의
+│   └── seed.mjs               # 초기 데이터 시드 (@faker-js/faker)
 ├── src/
-│   ├── app.ts               # Express 앱 설정 (미들웨어, 라우터 등록)
-│   ├── main.ts              # 서버 실행 진입점
-│   ├── modules/             # 기능별 독립 모듈 (Feature-based)
-│   │   ├── apartment/       # 아파트 정보 관리
-│   │   ├── auth/            # 인증 (login, logout, refresh)
-│   │   │   ├── auth.controller.ts
-│   │   │   ├── auth.service.ts
-│   │   │   ├── auth.dto.ts
-│   │   │   └── auth.router.ts
-│   │   ├── comment/         # 댓글 관리
-│   │   ├── complaint/       # 민원 관리
-│   │   │   ├── complaint.controller.ts
-│   │   │   ├── complaint.service.ts
-│   │   │   ├── complaint.repository.ts
-│   │   │   ├── complaint.router.ts
-│   │   │   ├── complaint.validation.ts
-│   │   │   └── complaint.type.ts
-│   │   ├── event/           # 이벤트 관리
-│   │   ├── notice/          # 공지사항 관리
-│   │   ├── notification/    # 알림 관리 (Socket.io + SSE)
-│   │   ├── poll/            # 투표 게시판
-│   │   │   ├── poll.controller.ts
-│   │   │   ├── poll.service.ts
-│   │   │   ├── poll.repository.ts
-│   │   │   ├── poll.router.ts
-│   │   │   └── poll.validation.ts
-│   │   ├── residentList/    # 입주민 명부
-│   │   │   └── residentList.repository.ts
-│   │   ├── user/            # 사용자 관리
-│   │   │   ├── user.controller.ts
-│   │   │   ├── user.service.ts
-│   │   │   ├── user.repository.ts
-│   │   │   ├── user.dto.ts
-│   │   │   └── user.router.ts
-│   │   └── vote/            # 투표 참여
-│   │       ├── vote.controller.ts
-│   │       ├── vote.service.ts
-│   │       ├── vote.repository.ts
-│   │       └── vote.router.ts
+│   ├── main.ts                # 서버 실행 진입점 (Socket.io, cron 초기화)
+│   ├── app.ts                 # Express 앱 설정 (미들웨어, 라우터 등록)
+│   ├── modules/               # 기능별 독립 모듈
+│   │   ├── apartment/         # 아파트 정보 관리
+│   │   ├── auth/              # 인증 + 회원가입 + 관리자/입주민 관리
+│   │   ├── comment/           # 댓글 관리
+│   │   ├── complaint/         # 민원 관리
+│   │   ├── event/             # 이벤트 관리
+│   │   ├── notice/            # 공지사항 관리
+│   │   ├── notification/      # 알림 (Socket.io + SSE)
+│   │   ├── poll/              # 투표 게시판
+│   │   ├── residentList/      # 입주민 명부 (CSV 업로드/다운로드)
+│   │   ├── user/              # 사용자 프로필 관리
+│   │   └── vote/              # 투표 참여
 │   ├── lib/
-│   │   ├── prisma.ts        # Prisma Client 싱글톤 인스턴스
-│   │   ├── constants.ts     # 전역 상수 정의
-│   │   ├── socket.ts        # Socket.io 싱글톤 인스턴스
-│   │   └── errors/          # 커스텀 HTTP 에러 클래스
-│   │       ├── BadRequestError.ts
-│   │       ├── ConflictError.ts
-│   │       ├── ForbiddenError.ts
-│   │       ├── NotFoundError.ts
-│   │       ├── UnauthorizedError.ts
-│   │       └── ValidationError.ts
+│   │   ├── prisma.ts          # Prisma Client 싱글톤
+│   │   ├── constants.ts       # 환경변수 및 전역 상수
+│   │   ├── socket.ts          # Socket.io 싱글톤 (initSocket, getIO)
+│   │   └── errors/            # 커스텀 HTTP 에러 클래스
 │   ├── middlewares/
-│   │   ├── asyncHandler.ts  # 비동기 에러 래퍼
-│   │   ├── authMiddleware.ts # JWT 인증 미들웨어
-│   │   └── errorHandler.ts  # 중앙 에러 핸들러 & 404 처리
+│   │   ├── asyncHandler.ts    # 비동기 에러 래퍼
+│   │   ├── authMiddleware.ts  # JWT 인증 미들웨어
+│   │   ├── errorHandler.ts    # 중앙 에러 핸들러 & 404 처리
+│   │   └── upload.ts          # Multer 파일 업로드 설정
 │   ├── structs/
-│   │   └── common.validation.ts  # superstruct 공통 유효성 검사
+│   │   └── common.validation.ts  # Superstruct 공통 검증기
 │   └── types/
-│       └── express.d.ts     # Express Request 타입 확장 (.d.ts)
+│       └── express.d.ts       # Express Request 타입 확장 (req.user)
 ├── jest.config.ts
-├── .gitignore
-├── package.json
 ├── tsconfig.json
-└── README.md
+├── .prettierrc
+└── package.json
 ```
-
----
-
-## 개발 컨벤션
-
-- **모듈화 (Feature-based)**: 각 기능은 `src/modules/` 하위에 `controller`, `service`, `repository`, `router`를 함께 배치합니다.
-- **의존성 주입 (DI)**:
-  - 주입 가능한 클래스는 `@injectable()` 데코레이터를 사용합니다.
-  - 의존성은 생성자 주입을 원칙으로 합니다.
-  - 바인딩 정보는 `inversify.config.ts`에서 중앙 관리합니다.
-- **비동기 처리**: 컨트롤러의 비동기 로직은 `asyncHandler`로 감싸 중앙 `errorHandler`에서 일괄 처리합니다.
-- **에러 처리**: `src/lib/errors/`의 커스텀 에러 클래스를 사용하여 HTTP 상태 코드와 에러 메시지를 명확히 구분합니다.
-- **유효성 검사**:
-  - DTO 기반 검사: `class-validator`, `class-transformer`
-  - 런타임 구조 검사: `superstruct` (`src/structs/`)
-  - 요청 검사: `express-validator`
-- **라우팅**: 각 모듈 라우터에서 컨트롤러 메서드를 명시적으로 바인딩합니다. (`controller.method.bind(controller)`)
-- **인증**: `authMiddleware`를 라우터 레벨에서 적용하여 보호가 필요한 엔드포인트를 일괄 처리합니다.
-
----
-
-## 테스트
-
-Jest + Supertest 기반의 유닛 테스트 및 통합 테스트를 지원합니다.
-
-```bash
-# 전체 테스트 실행
-npm run test
-
-# 특정 모듈만 실행
-npx jest --testPathPatterns="notification"
-```
-
-| 모듈 | 유닛 테스트 | 통합 테스트 (supertest) |
-| :--- | :---------- | :---------------------- |
-| notification | Service (3건) | Controller API (2건) |
-| auth | Service (7건) | Controller API (5건) |
-| user | Service (9건) | - |
 
 ---
 
@@ -295,60 +252,90 @@ PORT=3000
 JWT_ACCESS_SECRET="your_access_secret_key"
 JWT_REFRESH_SECRET="your_refresh_secret_key"
 CORS_ORIGIN="http://localhost:5173"
+NODE_ENV=development
 
 AWS_ACCESS_KEY_ID="your_aws_access_key_id"
 AWS_SECRET_ACCESS_KEY="your_aws_secret_access_key"
-AWS_REGION="your_aws_region"
+AWS_REGION="ap-northeast-2"
 AWS_BUCKET_NAME="your_bucket_name"
 ```
 
-### 데이터베이스 초기화
-
-처음 프로젝트를 설정할 때 아래 명령어로 스키마를 적용하고 초기 데이터를 삽입합니다.
-
-```bash
-# Prisma 클라이언트 생성
-npx prisma generate
-
-# 데이터베이스 스키마 마이그레이션
-npx prisma migrate dev
-
-# 초기 데이터 시드 (필요 시)
-npx prisma db seed
-```
-
-### 애플리케이션 실행
-
-개발 모드에서는 `nodemon`과 `ts-node`를 사용하여 파일 변경 시 서버가 자동으로 재시작됩니다.
+### 설치 및 데이터베이스 초기화
 
 ```bash
 # 의존성 설치
 npm install
 
-# 개발 모드로 실행
+# Prisma Client 생성
+npx prisma generate
+
+# 데이터베이스 마이그레이션
+npx prisma migrate dev
+
+# 초기 데이터 시드 (선택)
+npx prisma db seed
+```
+
+### 개발 모드 실행
+
+`nodemon` + `ts-node`를 사용하여 파일 변경 시 서버가 자동으로 재시작됩니다.
+
+```bash
 npm run dev
 ```
 
-프로덕션 환경에서는 TypeScript를 JavaScript로 컴파일 후 실행합니다.
+### 프로덕션 빌드 및 실행
 
 ```bash
-# 프로덕션 빌드
-npm run build
-
-# 프로덕션 실행
-npm run start
+npm run build    # TypeScript → JavaScript 컴파일 (dist/)
+npm run start    # node dist/main.js 실행
 ```
-
-서버가 성공적으로 실행되면 콘솔에 서버 포트 안내 메시지가 출력됩니다.
 
 ---
 
-## 인프라 및 배포 (Infrastructure)
+## 테스트
 
-이 프로젝트는 **AWS 클라우드 환경**에서 운영되도록 구성되었습니다.
+Jest + ts-jest + Supertest 기반 유닛/통합 테스트를 지원합니다.
 
-- **AWS EC2**: Linux 기반 가상 서버에서 Node.js 애플리케이션을 호스팅합니다.
-- **PM2**: 프로세스 매니저를 사용하여 무중단 배포 및 상태를 관리합니다.
-- **Nginx**: 리버스 프록시 서버로 80번 포트 요청을 Node.js 내부 포트로 전달합니다.
-- **AWS S3**: 이미지 파일(프로필, 민원 사진 등)을 안전하고 확장성 있게 저장합니다.
-- **AWS RDS**: 관리형 PostgreSQL 서비스로 데이터 안정성과 가용성을 보장합니다.
+```bash
+# 전체 테스트 실행
+npm run test
+
+# 특정 파일만 실행
+npx jest src/modules/auth/__tests__/auth.service.test.ts
+
+# 패턴으로 실행
+npx jest --testPathPatterns="notification"
+```
+
+| 모듈         | 유닛 테스트   | 통합 테스트 (Supertest) |
+| :----------- | :------------ | :---------------------- |
+| auth         | Service (7건) | Controller API (5건)    |
+| user         | Service (9건) | —                       |
+| notification | Service (3건) | Controller API (2건)    |
+
+---
+
+## 인프라 및 배포
+
+- **AWS EC2**: Linux 가상 서버에서 Node.js 앱 호스팅
+- **PM2**: 프로세스 매니저를 사용한 무중단 배포 및 상태 관리
+- **Nginx**: 리버스 프록시 (80번 포트 → Node.js 내부 포트)
+- **AWS S3**: 파일 저장소 (이미지, 문서 등)
+- **AWS RDS**: 관리형 PostgreSQL 데이터베이스
+
+---
+
+## 커밋 컨벤션
+
+```
+<이모지> <타입> : <제목> (50자 이내, 마침표 X)
+
+✨ feat     : 새로운 기능 추가
+🐛 fix      : 버그 수정
+📝 docs     : 문서 수정
+🛠️ refactor : 리팩토링
+✅ test     : 테스트 추가/수정
+🔥 remove   : 코드/파일 삭제
+♻️ chore    : 유지보수 (빌드/설정/패키지 등)
+```
