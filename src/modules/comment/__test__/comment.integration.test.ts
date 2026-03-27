@@ -12,12 +12,13 @@ describe('Comment 통합 테스트', () => {
   let service: CommentService;
 
   beforeEach(async () => {
+    await prisma.notification.deleteMany();
     await prisma.complaintComment.deleteMany();
     await prisma.noticeComment.deleteMany();
-    await prisma.complaint.deleteMany();
     await prisma.notice.deleteMany();
-    await prisma.user.deleteMany();
+    await prisma.complaint.deleteMany();
     await prisma.board.deleteMany();
+    await prisma.user.deleteMany();
     await prisma.apartment.deleteMany();
 
     const commentRepository = new CommentRepository(prisma);

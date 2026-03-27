@@ -19,8 +19,10 @@ describe('Event API 통합 테스트', () => {
   beforeAll(async () => {
     // 0. 기존 잔여 데이터 청소 (이전 테스트 실패 대비)
     await prisma.notification.deleteMany();
-    await prisma.event.deleteMany();
+    await prisma.complaintComment.deleteMany();
+    await prisma.noticeComment.deleteMany();
     await prisma.notice.deleteMany();
+    await prisma.complaint.deleteMany();
     await prisma.board.deleteMany();
     await prisma.user.deleteMany();
     await prisma.apartment.deleteMany();

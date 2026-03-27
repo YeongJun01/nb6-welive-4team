@@ -12,12 +12,13 @@ describe('댓글 api 테스트', () => {
 
   beforeEach(async () => {
     // DB 초기화
+    await prisma.notification.deleteMany();
     await prisma.complaintComment.deleteMany();
     await prisma.noticeComment.deleteMany();
-    await prisma.complaint.deleteMany();
     await prisma.notice.deleteMany();
-    await prisma.user.deleteMany();
+    await prisma.complaint.deleteMany();
     await prisma.board.deleteMany();
+    await prisma.user.deleteMany();
     await prisma.apartment.deleteMany();
 
     const hashed = await bcrypt.hash('1234', 10);
