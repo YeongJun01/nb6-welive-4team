@@ -8,6 +8,7 @@
   "scripts": {
     "build": "clear; tsc",
     "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
     "dev": "clear; nodemon --watch 'src/**/*.ts' --exec ts-node -r tsconfig-paths/register src/main.ts",
     "test": "jest",
     "prisma:migrate": "prisma migrate dev",
