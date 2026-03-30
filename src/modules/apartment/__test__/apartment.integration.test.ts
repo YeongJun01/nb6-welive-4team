@@ -17,7 +17,7 @@ describe('아파트 통합 테스트', () => {
     await prisma.$disconnect();
   });
   // test db 확인
-  console.log(process.env.DATABASE_URL);
+  // console.log(process.env.DATABASE_URL);
 
   // 아파트 공개 목록 조회
   it('아파트 목록 조회 통합 테스트', async () => {
