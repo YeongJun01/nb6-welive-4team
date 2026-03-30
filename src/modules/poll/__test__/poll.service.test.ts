@@ -86,7 +86,7 @@ describe('Poll Service 단위 테스트', () => {
         buildingPermission: ['101'],
         title: '투표 2',
         description: '내용 2',
-        startDate: new Date(Date.now() - 86400000),
+        startDate: new Date(Date.now()),
         endDate: new Date(Date.now() + 86400000),
         pollOptions: [{ content: '투표 2 - 옵션1' }, { content: '투표 2 - 옵션2' }],
         viewCount: 5,
@@ -100,7 +100,7 @@ describe('Poll Service 단위 테스트', () => {
         buildingPermission: ['102'],
         title: '투표 3',
         description: '내용 3',
-        startDate: new Date(Date.now() - 86400000),
+        startDate: new Date(Date.now()),
         endDate: new Date(Date.now() + 86400000),
         pollOptions: [{ content: '투표 3 - 옵션1' }, { content: '투표 3 - 옵션2' }],
         viewCount: 5,
@@ -111,8 +111,8 @@ describe('Poll Service 단위 테스트', () => {
     mockPollWithComments = {
       ...mockPoll[0],
       content: '상세 내용입니다.',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 86400000),
+      startDate: new Date(Date.now() + 86400000),
+      endDate: new Date(Date.now() + 172800000),
       comments: [
         {
           id: 'comment1',
@@ -158,8 +158,8 @@ describe('Poll Service 단위 테스트', () => {
         buildingPermission: ['ALL'],
         title: '투표 테스트',
         content: '내용',
-        startDate: new Date(Date.now() + 86400000), // + Day 1
-        endDate: new Date(Date.now() + 172800000), // + Day 2
+        startDate: new Date(Date.now() + 86400000), 
+        endDate: new Date(Date.now() + 172800000),
         options: [{ title: '옵션1' }, { title: '옵션2' }],
       };
 
@@ -195,8 +195,8 @@ describe('Poll Service 단위 테스트', () => {
         buildingPermission: ['ALL'],
         title: '투표 테스트',
         content: '내용',
-        startDate: new Date(Date.now() + 86400000), // + Day 1
-        endDate: new Date(Date.now() + 172800000), // + Day 2
+        startDate: new Date(Date.now() + 86400000), 
+        endDate: new Date(Date.now() + 172800000), 
         options: [{ title: '옵션1' }, { title: '옵션2' }],
       };
 
@@ -214,8 +214,8 @@ describe('Poll Service 단위 테스트', () => {
         buildingPermission: ['ALL'],
         title: '투표 테스트',
         content: '내용',
-        startDate: new Date(Date.now() + 86400000), // + Day 1
-        endDate: new Date(Date.now() + 172800000), // + Day 2
+        startDate: new Date(Date.now() + 86400000), 
+        endDate: new Date(Date.now() + 172800000),
         options: [{ title: '옵션1' }, { title: '옵션2' }],
       };
 
