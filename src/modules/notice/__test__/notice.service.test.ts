@@ -75,8 +75,8 @@ describe('Notice Service 단위 테스트', () => {
     mockNoticeWithComments = {
       ...mocknotice[0],
       content: '상세 내용입니다.',
-      startDate: new Date(),
-      endDate: new Date(),
+      startDate: new Date(Date.now() + 86400000),
+      endDate: new Date(Date.now() + 172800000),
       comments: [
         {
           id: 'comment1',
@@ -144,8 +144,8 @@ describe('Notice Service 단위 테스트', () => {
         title: '공지사항2',
         content: '내용2',
         isPinned: false,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 86400000),
+        startDate: new Date(Date.now() + 86400000),
+        endDate: new Date(Date.now() + 172800000),
       };
 
       findUserSpy.mockResolvedValue(mockAdmin1 as any);
@@ -313,8 +313,8 @@ describe('Notice Service 단위 테스트', () => {
         title: '수정된 제목',
         content: '내용2',
         isPinned: false,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 86400000),
+        startDate: new Date(Date.now() + 86400000),
+        endDate: new Date(Date.now() + 172800000),
       };
 
       const result = await noticeService.updateNotice(
