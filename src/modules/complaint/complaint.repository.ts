@@ -6,8 +6,18 @@ import complaintStruct from './complaint.validation';
 import { Prisma } from '@prisma/client';
 import { NotificationRepository } from '../notification/notification.repository';
 
-type status = Infer<typeof complaintStruct.complaintStatus>;
-type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
+import { GetComplaintListQuery } from './complaint.dto';
+
+type Status = Infer<typeof complaintStruct.complaintStatus>;
+type NotiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
+type CreateComplaintData = Pick<Prisma.ComplaintCreateInput, 'title' | 'content' | 'isPublic'> & {
+  boardId: string;
+  creatorId: string;
+  apartmentDong: string;
+  apartmentHo: string;
+};
+type GetComplaintFilter = Prisma.ComplaintWhereInput;
+type UpdateComplaintData = Pick<Prisma.ComplaintUpdateInput, 'title' | 'content' | 'isPublic'>;
 
 class UserRepo {
   getUserInfo = async (userId: string) => {
@@ -64,17 +74,16 @@ class ComplaintRepository {
     }
   };
 
-  createComplaint = async (data: any, userInfo: any, adminId: string) => {
+  createComplaint = async (data: CreateComplaintData, adminId: string) => {
     return await prisma.$transaction(async (tx) => {
       const complaint = await tx.complaint.create({
         data: {
           ...data,
-          ...userInfo,
           adminId,
         },
       });
 
-      const notiData: notiData = {
+      const notiData: NotiData = {
         notiType: 'COMPLAINT_RAISED',
         title: data.title,
         content: data.content,
@@ -88,8 +97,13 @@ class ComplaintRepository {
     });
   };
 
-  getComplaintList = async (query: any, boardId: string, role: string, userId: string) => {
-    const getComplaintFilter: any = {
+  getComplaintList = async (
+    query: GetComplaintListQuery,
+    boardId: string,
+    role: string,
+    userId: string,
+  ) => {
+    const getComplaintFilter: GetComplaintFilter = {
       boardId,
       status: query.status === 'ALL' ? undefined : query.status,
       apartmentDong: query.dong === '' ? undefined : query.dong,
@@ -119,7 +133,7 @@ class ComplaintRepository {
 
     // 키워드가 있는 경우, 역할 권한에 키워드 추가
     if (query.keyword) {
-      const keywordFilter = [
+      const keywordFilter: Prisma.ComplaintWhereInput[] = [
         { title: { contains: query.keyword, mode: 'insensitive' } },
         { content: { contains: query.keyword, mode: 'insensitive' } },
       ];
@@ -165,6 +179,11 @@ class ComplaintRepository {
         id: complaintId,
       },
       include: {
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
         comments: {
           include: {
             user: {
@@ -196,6 +215,11 @@ class ComplaintRepository {
       where: { id: complaintId },
       data: { viewCount: { increment: 1 } },
       include: {
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
         comments: {
           include: {
             user: {
@@ -220,11 +244,25 @@ class ComplaintRepository {
     });
   };
 
-  updateComplaint = async (complaintId: string, data: any) => {
+  updateComplaint = async (complaintId: string, data: UpdateComplaintData) => {
     return await prisma.complaint.update({
       where: { id: complaintId },
       data: { ...data },
       include: {
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+        comments: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         creator: {
           select: {
             name: true,
@@ -240,12 +278,17 @@ class ComplaintRepository {
     });
   };
 
-  updateComplaintStatus = async (complaintId: string, data: status) => {
+  updateComplaintStatus = async (complaintId: string, data: Status) => {
     return await prisma.$transaction(async (tx) => {
       const complaint = await tx.complaint.update({
         where: { id: complaintId },
         data: { status: data.status },
         include: {
+          _count: {
+            select: {
+              comments: true,
+            },
+          },
           comments: {
             include: {
               user: {
@@ -272,7 +315,7 @@ class ComplaintRepository {
       // 민원 상태 변경시 사용자에게 알림
       const notiTypeSetting = this.notificationType(complaint.status);
 
-      const notiData: notiData = {
+      const notiData: NotiData = {
         notiType: notiTypeSetting as any,
         title: complaint.title,
         content: complaint.content,

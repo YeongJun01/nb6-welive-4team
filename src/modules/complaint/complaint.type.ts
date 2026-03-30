@@ -12,6 +12,7 @@ export interface ComplaintResponse {
   dong: string;
   ho: string;
 }
+
 export interface ComplaintDetailResponse extends ComplaintResponse {
   content: string;
   boardType: string;
