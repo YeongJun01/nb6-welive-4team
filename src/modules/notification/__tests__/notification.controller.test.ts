@@ -71,10 +71,13 @@ describe('Notification API 엔드포인트', () => {
         // SSE는 스트림이므로 헤더만 확인
         expect(res.headers['content-type']).toContain('text/event-stream');
         expect(res.headers['cache-control']).toBe('no-cache');
+
+        // ECONNRESET 에러 방지: 응답 스트림의 에러를 무시 처리
+        res.on('error', () => {});
         done();
       });
 
-      // 1초 후 연결 강제 종료
+      // 헤더 확인 후 연결 종료
       setTimeout(() => req.abort(), 1000);
     });
   });
