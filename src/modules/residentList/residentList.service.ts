@@ -1,11 +1,12 @@
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
-import apartmentRepository from '../apartment/apartment.repository';
 import { UserRepository } from '../user';
 import { CreateResidentDto, IsHouseholder, ResidentStatus } from './residentList.dto';
 import { ResidentListRepository } from './residentList.repository';
 import { parseCsv } from './parseCsv';
-import fs from 'fs/promises';
+import fsPromises from 'fs/promises';
 import { SignUpDto } from '../user/user.dto';
+import axios from 'axios';
+import fs from 'fs';
 
 export class ResidentListService {
   constructor(
@@ -289,6 +290,19 @@ export class ResidentListService {
   async createResidentsByCsv(userId: string, file: Express.Multer.File) {
     const user = await this.userRepository.findUserByUnique({ id: userId });
 
+    const isS3 = process.env.STORAGE_TYPE === 's3';
+
+    let stream;
+
+    if (isS3) {
+      const response = await axios.get((file as any).location, {
+        responseType: 'stream',
+      });
+      stream = response.data;
+    } else {
+      stream = fs.createReadStream(file.path);
+    }
+
     if (!user) {
       throw new NotFoundError('사용자를 찾을 수 없습니다.');
     }
@@ -303,7 +317,7 @@ export class ResidentListService {
       throw new NotFoundError('사용자의 아파트 정보를 찾을 수 없습니다.');
     }
 
-    const rows = await parseCsv(file.path);
+    const rows = await parseCsv(stream);
 
     if (rows.length === 0) {
       throw new BadRequestError('CSV 파일이 비어 있습니다.');
@@ -373,7 +387,13 @@ export class ResidentListService {
 
     const result = await this.residentListRepository.createManyResidents(apartmentId, residents);
 
-    await fs.unlink(file.path);
+    if (!isS3 && file.path) {
+      try {
+        await fsPromises.unlink(file.path);
+      } catch (err: any) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+    }
 
     return {
       message: `${result.count}개의 입주민 정보가 성공적으로 생성되었습니다.`,

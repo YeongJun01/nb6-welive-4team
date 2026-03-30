@@ -1,11 +1,10 @@
 import csv from 'csv-parser';
-import fs from 'fs';
 
-export function parseCsv(filePath: string): Promise<any[]> {
+export function parseCsv(stream: NodeJS.ReadableStream): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const results: any[] = [];
 
-    fs.createReadStream(filePath)
+    stream
       .pipe(
         csv({
           mapHeaders: ({ header }) => header.replace(/^\uFEFF/, '').trim(),
