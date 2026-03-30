@@ -1,4 +1,4 @@
-import { NotificationType, PrismaClient } from '@prisma/client';
+import { NotificationType, PrismaClient, Prisma } from '@prisma/client';
 import { getIO } from '../../lib/socket';
 
 type notifiType = {
@@ -25,7 +25,11 @@ export class NotificationRepository {
     });
   }
 
-  async createNotification(tx: any, notificationData: notifiType, userId: string) {
+  async createNotification(
+    tx: Prisma.TransactionClient,
+    notificationData: notifiType,
+    userId: string,
+  ) {
     const notification = await tx.notification.create({
       data: {
         ...notificationData,
