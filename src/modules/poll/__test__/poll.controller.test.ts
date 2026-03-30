@@ -111,8 +111,8 @@ describe('Poll API 통합 테스트', () => {
         buildingPermission: ['ALL'],
         title: '투표 1',
         description: '내용 1',
-        startDate: new Date(2026, 3, 15),
-        endDate: new Date(2026, 3, 30),
+        startDate: new Date(Date.now() + 86400000),
+        endDate: new Date(Date.now() + 172800000),
         pollOptions: {
           create: [{ content: '투표 1 - 옵션1' }, { content: '투표 1 - 옵션2' }],
         },
@@ -133,8 +133,8 @@ describe('Poll API 통합 테스트', () => {
         buildingPermission: ['101', '102'],
         title: '투표 2',
         description: '내용 2',
-        startDate: new Date(2026, 3, 15),
-        endDate: new Date(2026, 3, 30),
+        startDate: new Date(Date.now()),
+        endDate: new Date(Date.now() + 172800000),
         pollOptions: {
           create: [{ content: '투표 2 - 옵션1' }, { content: '투표 2 - 옵션2' }],
         },
@@ -169,8 +169,8 @@ describe('Poll API 통합 테스트', () => {
       buildingPermission: ['ALL'],
       title: '투표 테스트',
       content: '내용',
-      startDate: '2026-03-30',
-      endDate: '2026-04-20',
+      startDate: new Date(Date.now() + 86400000),
+      endDate: new Date(Date.now() + 172800000),
       options: [{ title: '옵션1' }, { title: '옵션2' }],
     });
 
@@ -359,8 +359,8 @@ describe('Poll API 통합 테스트', () => {
       title: '수정된 투표 제목',
       content: '수정된 투표 내용',
       buildingPermission: ['ALL'],
-      startDate: '2026-04-15',
-      endDate: '2026-04-30',
+      startDate: new Date(Date.now() + 86400000),
+      endDate: new Date(Date.now() + 172800000),
       status: 'PENDING',
       options: [{ title: '수정된 옵션1' }, { title: '수정된 옵션2' }],
     });

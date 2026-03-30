@@ -151,8 +151,8 @@ describe('Poll API 통합 테스트', () => {
         buildingPermission: ['ALL'],
         title: '투표 1',
         description: '내용 1',
-        startDate: new Date(2026, 2, 15),
-        endDate: new Date(2026, 3, 30),
+        startDate: new Date(Date.now()),
+        endDate: new Date(Date.now() + 172800000),
         pollOptions: {
           create: [{ content: '투표 1 - 옵션1' }, { content: '투표 1 - 옵션2' }],
         },
@@ -168,8 +168,8 @@ describe('Poll API 통합 테스트', () => {
         buildingPermission: ['ALL'],
         title: '투표 2',
         description: '내용 2',
-        startDate: new Date(2026, 2, 15),
-        endDate: new Date(2026, 3, 30),
+        startDate: new Date(Date.now() + 86400000),
+        endDate: new Date(Date.now() + 172800000),
         pollOptions: {
           create: [{ content: '투표 2 - 옵션1' }, { content: '투표 2 - 옵션2' }],
         },
@@ -185,8 +185,8 @@ describe('Poll API 통합 테스트', () => {
         buildingPermission: ['101'],
         title: '투표 2',
         description: '내용 2',
-        startDate: new Date(2026, 2, 15),
-        endDate: new Date(2026, 3, 30),
+        startDate: new Date(Date.now()),
+        endDate: new Date(Date.now() + 172800000),
         pollOptions: {
           create: [{ content: '투표 2 - 옵션1' }, { content: '투표 2 - 옵션2' }],
         },
