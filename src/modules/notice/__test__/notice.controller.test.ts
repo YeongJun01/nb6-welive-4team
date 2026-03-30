@@ -126,8 +126,8 @@ describe('Notice API 통합 테스트', () => {
         title: '긴급 공지',
         content: '긴급 내용',
         isPinned: false,
-        startDate: new Date(2026, 3, 15),
-        endDate: new Date(2026, 3, 20),
+        startDate: new Date(Date.now() + 86400000),
+        endDate: new Date(Date.now() + 172800000),
       },
     });
   }
@@ -150,8 +150,8 @@ describe('Notice API 통합 테스트', () => {
       boardId: testBoard!.id,
       title: '4월 점검 공지',
       content: '내용',
-      startDate: '2026-04-15',
-      endDate: '2026-04-20',
+      startDate: new Date(Date.now() + 86400000),
+      endDate: new Date(Date.now() + 172800000),
     });
 
     it('관리자가 기간이 없는 공지사항을 생성하면 201을 반환하고, 알림은 함께 생성되고 이벤트는 생성되지 않는다', async () => {
