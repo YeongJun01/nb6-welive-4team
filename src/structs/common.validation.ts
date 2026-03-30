@@ -1,7 +1,7 @@
 import isUuid from 'is-uuid';
 import * as s from 'superstruct';
 
-const uuid = s.define<string>('uuid', (value: any) => isUuid.v4(value));
+const uuid = s.define<string>('uuid', (value: unknown) => isUuid.v4(value as string));
 
 const number = s.coerce(s.number(), s.string(), (value) => Number(value));
 

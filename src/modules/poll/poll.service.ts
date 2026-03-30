@@ -3,9 +3,19 @@ import pollStruct from './poll.validation';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
 import pollRepository, { userRepo, boardRepo } from './poll.repository';
 import cron from 'node-cron';
+import { GetPollListFromDB, GetPollDetailFromDB, GetPollListQuery } from './poll.dto';
 
 type Poll = Infer<typeof pollStruct.pollInformation>;
 type UpdatePoll = Infer<typeof pollStruct.updatePoll>;
+type MapPollOption = {
+  id: string;
+  content: string;
+  voteCount: number;
+};
+
+type GetPollListQueryFromService = Omit<GetPollListQuery, 'orderBy'> & {
+  orderBy: 'oldest' | 'newest';
+};
 
 class PollService {
   private dateCheck = (startDate: Date, endDate: Date) => {
@@ -61,12 +71,12 @@ class PollService {
     }
   };
 
-  private mapPollList = (poll: any) => {
+  private mapPollList = (poll: GetPollListFromDB) => {
     return {
       pollId: poll.id,
       userId: poll.adminId,
       title: poll.title,
-      writerName: poll.admin?.name,
+      writerName: poll.admin!.name,
       buildingPermission: poll.buildingPermission,
       createdAt: poll.createdAt,
       updatedAt: poll.updatedAt,
@@ -76,20 +86,20 @@ class PollService {
     };
   };
 
-  private mapPollInfo = (poll: any) => {
+  private mapPollInfo = (poll: GetPollDetailFromDB) => {
     return {
       ...this.mapPollList(poll),
       content: poll.description,
       boardName: '주민투표',
-      options: poll.pollOptions.map((option: any) => ({
+      options: poll.pollOptions.map((option: MapPollOption) => ({
         id: option.id,
         title: option.content,
-        voteCount: option.voteCount === null ? 0 : option.voteCount,
+        voteCount: option.voteCount,
       })),
     };
   };
 
-  private mapPollInfoUpdate = (poll: any) => {
+  private mapPollInfoUpdate = (poll: GetPollDetailFromDB) => {
     return {
       title: poll.title,
       content: poll.description,
@@ -97,7 +107,7 @@ class PollService {
       startDate: poll.startDate,
       endDate: poll.endDate,
       status: this.getMappedStatus(poll.status),
-      options: poll.pollOptions.map((option: any) => ({
+      options: poll.pollOptions.map((option: { content: string }) => ({
         title: option.content,
       })),
     };
@@ -155,7 +165,7 @@ class PollService {
   };
 
   // 투표 목록 조회
-  getPollList = async (query: any, userId: string) => {
+  getPollList = async (query: GetPollListQueryFromService, userId: string) => {
     // 유저 정보 및 게시판 정보 확인
     const user = await userRepo.getUserInfo(userId);
     if (!user) {
@@ -188,7 +198,7 @@ class PollService {
     );
 
     return {
-      pollList: pollList.map((poll: any) => this.mapPollList(poll)),
+      pollList: pollList.map((poll) => this.mapPollList(poll)),
       totalCount,
     };
   };

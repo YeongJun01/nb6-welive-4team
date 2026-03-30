@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
 import prisma from '../../lib/prisma';
+import { Prisma } from '@prisma/client';
 
 class VoteRepository {
-  getPollByOptionId = async (optionId: string, tx = prisma) => {
+  getPollByOptionId = async (optionId: string, tx: Prisma.TransactionClient = prisma) => {
     return await tx.pollOption.findUnique({
       where: {
         id: optionId,
@@ -28,7 +28,12 @@ class VoteRepository {
     });
   };
 
-  createVote = async (pollId: string, optionId: string, userId: string, tx = prisma) => {
+  createVote = async (
+    pollId: string,
+    optionId: string,
+    userId: string,
+    tx: Prisma.TransactionClient = prisma,
+  ) => {
     return await tx.vote.create({
       data: {
         pollId,
@@ -38,7 +43,7 @@ class VoteRepository {
     });
   };
 
-  deleteVote = async (pollId: string, userId: string, tx = prisma) => {
+  deleteVote = async (pollId: string, userId: string, tx: Prisma.TransactionClient = prisma) => {
     return await tx.vote.delete({
       where: {
         pollId_userId: {
@@ -49,7 +54,11 @@ class VoteRepository {
     });
   };
 
-  updateVoteCount = async (pollId: string, optionId: string, tx = prisma) => {
+  updateVoteCount = async (
+    pollId: string,
+    optionId: string,
+    tx: Prisma.TransactionClient = prisma,
+  ) => {
     const countVote = await tx.vote.count({
       where: {
         pollId,
