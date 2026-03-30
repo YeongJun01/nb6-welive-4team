@@ -64,8 +64,8 @@ describe('Vote Service 단위 테스트', () => {
       buildingPermission: ['ALL'],
       title: '투표 1',
       description: '내용 1',
-      startDate: new Date(2026, 2, 15),
-      endDate: new Date(2026, 3, 30),
+      startDate: new Date(Date.now() - 86400000),
+      endDate: new Date(Date.now() + 172800000),
       board: { apartmentId: 'apt1' },
       pollOptions: [
         {
