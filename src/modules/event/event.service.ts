@@ -1,26 +1,43 @@
-import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
+import { NotFoundError, ForbiddenError } from '../../lib/errors';
 import { UserRepository } from '../user/user.repository';
 import apartmentRepository from '../apartment/apartment.repository';
 import prisma from '../../lib/prisma';
 import eventRepository from './event.repository';
+import { EventFromDB } from './event.dto';
+import { EventResponse } from './event.type';
+
+type GetEventListQuery = {
+  apartmentId: string;
+  year: number;
+  month: number;
+};
 
 class EventService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  private mapEventList = (eventList: any) => {
-    return eventList.map((event: any) => {
-      return {
+  private mapEventList = (eventList: EventFromDB[]): EventResponse[] => {
+    return eventList.reduce((result: EventResponse[], event) => {
+      const start = event.pollId ? event.poll?.startDate : event.notice?.startDate;
+      const end = event.pollId ? event.poll?.endDate : event.notice?.endDate;
+
+      // 날짜가 없는 경우 출력 데이터로 넣지 않음
+      if (!start || !end) {
+        return result;
+      }
+
+      result.push({
         id: event.id,
-        start: event.pollId ? event.poll.startDate : event.notice.startDate,
-        end: event.pollId ? event.poll.endDate : event.notice.endDate,
+        start,
+        end,
         title: event.title,
-        category: event.pollId ? 'RESIDENT_VOTE' : event.notice.category,
+        category: event.pollId ? 'RESIDENT_VOTE' : event.notice!.category,
         type: event.pollId ? 'POLL' : 'NOTICE',
-      };
-    });
+      });
+      return result;
+    }, []);
   };
 
-  getEventList = async (query: any, userId: string) => {
+  getEventList = async (query: GetEventListQuery, userId: string) => {
     const user = await this.userRepository.findUserByUnique({ id: userId });
 
     if (!user) {

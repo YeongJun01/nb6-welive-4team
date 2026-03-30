@@ -2,6 +2,7 @@ import voteRepository from './vote.repository';
 import { userRepo } from '../poll/poll.repository';
 import prisma from '../../lib/prisma';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
+import { Prisma } from '@prisma/client';
 
 class VoteService {
   private validateVoteAbility = async (optionId: string, userId: string) => {
@@ -56,7 +57,7 @@ class VoteService {
       throw new BadRequestError('이미 투표하셨습니다.');
     }
 
-    const pollVote = await prisma.$transaction(async (tx: any) => {
+    const pollVote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await voteRepository.createVote(pollDetail.pollId, optionId, userId, tx);
       await voteRepository.updateVoteCount(pollDetail.pollId, optionId, tx);
       return await voteRepository.getPollByOptionId(optionId, tx);
@@ -75,7 +76,7 @@ class VoteService {
       throw new BadRequestError('투표하지 않았습니다.');
     }
 
-    const pollVote = await prisma.$transaction(async (tx: any) => {
+    const pollVote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await voteRepository.deleteVote(pollDetail.pollId, userId, tx);
       await voteRepository.updateVoteCount(pollDetail.pollId, optionId, tx);
       return await voteRepository.getPollByOptionId(optionId, tx);
