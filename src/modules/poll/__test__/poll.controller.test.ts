@@ -25,6 +25,10 @@ describe('Poll API 통합 테스트', () => {
 
     await prisma.notification.deleteMany();
     await prisma.event.deleteMany();
+    await prisma.complaintComment.deleteMany();
+    await prisma.noticeComment.deleteMany();
+    await prisma.notice.deleteMany();
+    await prisma.complaint.deleteMany();
     await prisma.pollOption.deleteMany();
     await prisma.poll.deleteMany();
     await prisma.board.deleteMany();

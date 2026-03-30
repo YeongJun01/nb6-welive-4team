@@ -3,6 +3,8 @@ import { ResidentListRepository } from '../residentList.repository';
 import { UserRepository } from '../../user';
 import prisma from '../../../lib/prisma';
 import { IsHouseholder } from '../residentList.dto';
+import fs from 'fs';
+import { Readable } from 'stream';
 
 // 파일 파싱 자체는 믿고 결과만 테스트
 jest.mock('../parseCsv');
@@ -22,6 +24,7 @@ describe('ResidentList 통합 테스트', () => {
   let adminUser: any;
 
   beforeEach(async () => {
+    jest.spyOn(fs, 'createReadStream').mockReturnValue(Readable.from(['csv']) as any);
     residentRepo = new ResidentListRepository(prisma);
     userRepo = new UserRepository(prisma);
     service = new ResidentListService(residentRepo, userRepo);
@@ -183,6 +186,7 @@ describe('ResidentList 통합 테스트', () => {
 
   // csv로 입주자 생성
   it('CSV로 입주민 생성 성공', async () => {
+    (fs.createReadStream as jest.Mock).mockReturnValue(Readable.from(['csv']));
     (csvModule.parseCsv as jest.Mock).mockResolvedValue([
       {
         동: '101',
