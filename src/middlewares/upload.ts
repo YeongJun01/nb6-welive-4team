@@ -2,6 +2,7 @@ import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import crypto from 'crypto';
 import { Request } from 'express';
+import fs from 'fs';
 
 // 첨부파일 저장 경로
 const UPLOAD_DIR = path.resolve(__dirname, '../../public/uploads');
@@ -32,6 +33,11 @@ const ALLOWED_EXT = [
 // storage 설정
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
+    // 폴더 없으면 생성
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+
     cb(null, UPLOAD_DIR);
   },
   filename: (_req, file, cb) => {
