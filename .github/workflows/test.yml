@@ -75,24 +75,4 @@ jobs:
         run: npm run typecheck # TypeScript 타입 검사 수행
 
       - name: Run Tests
-        run: npm run test src/modules/apartment -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/auth -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/comment -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/complaint -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/event -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/notice -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/notification -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/poll -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/residentList -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/user -- --runInBand
-      - name: Run Tests
-        run: npm run test src/modules/vote -- --runInBand
+        run: npm run test -- --runInBand # 순서대로 실행하기 위해 -- --runInBand 사용
