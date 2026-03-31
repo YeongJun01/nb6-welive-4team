@@ -16,6 +16,7 @@ const mockUserRepository = {
   findApartmentById: jest.fn(),
   findUsersByRole: jest.fn(),
   findAdminsByApartmentId: jest.fn(),
+  findApartmentByName: jest.fn(),
 } as unknown as UserRepository;
 
 const mockResidentListRepository = {
@@ -52,13 +53,25 @@ function createTestApp() {
   const userController = new UserController(userService);
 
   app.post('/auth/login', async (req, res, next) => {
-    try { await authController.login(req, res); } catch (e) { next(e); }
+    try {
+      await authController.login(req, res);
+    } catch (e) {
+      next(e);
+    }
   });
   app.post('/auth/signup', async (req, res, next) => {
-    try { await userController.signUpUser(req, res); } catch (e) { next(e); }
+    try {
+      await userController.signUpUser(req, res);
+    } catch (e) {
+      next(e);
+    }
   });
   app.post('/auth/logout', async (req, res, next) => {
-    try { await authController.logout(req, res); } catch (e) { next(e); }
+    try {
+      await authController.logout(req, res);
+    } catch (e) {
+      next(e);
+    }
   });
 
   app.use(errorHandler);
@@ -112,7 +125,7 @@ describe('Auth API 엔드포인트', () => {
   describe('POST /auth/signup', () => {
     it('입주민 회원가입 성공 시 201을 반환한다', async () => {
       (mockUserRepository.findUserByUnique as jest.Mock).mockResolvedValue(null);
-      (mockUserRepository.findApartmentById as jest.Mock).mockResolvedValue({ id: 'apt-1' });
+      (mockUserRepository.findApartmentByName as jest.Mock).mockResolvedValue({ id: 'apt-1' });
       (mockUserRepository.findAdminsByApartmentId as jest.Mock).mockResolvedValue([]);
       (mockUserRepository.createUser as jest.Mock).mockResolvedValue({
         id: 'new-user-1',
@@ -129,7 +142,7 @@ describe('Auth API 엔드포인트', () => {
         name: '신규유저',
         email: 'new@test.com',
         contact: '010-9999-9999',
-        apartmentId: 'apt-1',
+        apartmentName: 'apt-1',
         apartmentDong: '101',
         apartmentHo: '501',
       });
@@ -151,7 +164,7 @@ describe('Auth API 엔드포인트', () => {
         name: '중복유저',
         email: 'dup@test.com',
         contact: '010-8888-8888',
-        apartmentId: 'apt-1',
+        apartmentName: 'apt-1',
         apartmentDong: '101',
         apartmentHo: '501',
       });
