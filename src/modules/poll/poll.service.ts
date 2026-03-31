@@ -192,13 +192,13 @@ class PollService {
       customBuildingPermission = [user.residentLists!.apartmentDong, 'ALL'];
     }
 
-    const { pollList, totalCount } = await pollRepository.getPollList(
+    const { polls, totalCount } = await pollRepository.getPollList(
       { ...query, status: pollStatus, orderBy, buildingPermission: customBuildingPermission },
       board.id,
     );
 
     return {
-      polls: pollList.map((poll) => this.mapPollList(poll)),
+      polls: polls.map((poll) => this.mapPollList(poll)),
       totalCount,
     };
   };

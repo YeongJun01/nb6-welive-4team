@@ -229,7 +229,7 @@ class PollRepository {
       }),
     ]);
 
-    return { pollList, totalCount };
+    return { polls: pollList, totalCount };
   };
 
   // 투표 상세 조회
