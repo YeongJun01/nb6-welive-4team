@@ -79,8 +79,11 @@ class ApartmentController {
     if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
       // 관리자용 상세 조회 (관리자 정보 포함)
       result = await apartmentService.getApartmentByIdForAdmin(id);
+    } else if (role === 'USER') {
+      // 일반 유저(입주자): 공개 정보 기반 상세 조회 (동/호 범위 정보 포함)
+      result = await apartmentService.getApartmentByIdForPublic(id);
     } else {
-      // 인증 필요
+      // 인증(로그인) 필요
       throw new ForbiddenError('권한이 없습니다.');
     }
 

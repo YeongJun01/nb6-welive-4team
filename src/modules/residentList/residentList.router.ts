@@ -47,4 +47,6 @@ router
   .delete(asyncHandler(residentListController.deleteResident.bind(residentListController)))
   .put(asyncHandler(residentListController.softDeleteResident.bind(residentListController)));
 
+// FE 확인 결과 : /residents/from-user/{userId} API는 필요하지 않음, 따라서 백엔드 개발에서 생략함
+
 export default router;
