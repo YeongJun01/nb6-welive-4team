@@ -10,13 +10,18 @@ import { asyncHandler } from '../../middlewares/asyncHandler';
 import { uploadCsv } from '../../middlewares/upload';
 
 const router = Router();
-router.use(authMiddleware);
-
 const residentListService = new ResidentListService(
   new ResidentListRepository(prisma),
   new UserRepository(prisma),
 );
 const residentListController = new ResidentListController(residentListService);
+
+router
+  .route('/file/template')
+  .get(
+    asyncHandler(residentListController.downloadResidentCsvTemplate.bind(residentListController)),
+  );
+router.use(authMiddleware);
 
 router
   .route('/')
@@ -28,12 +33,6 @@ router
   .post(
     uploadCsv,
     asyncHandler(residentListController.uploadResidentsByCsv.bind(residentListController)),
-  );
-
-router
-  .route('/file/template')
-  .get(
-    asyncHandler(residentListController.downloadResidentCsvTemplate.bind(residentListController)),
   );
 
 router

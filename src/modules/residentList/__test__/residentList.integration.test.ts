@@ -10,9 +10,13 @@ import { Readable } from 'stream';
 jest.mock('../parseCsv');
 
 // 파일 삭제 방지
-jest.mock('fs/promises', () => ({
-  unlink: jest.fn(),
-}));
+jest.mock('fs/promises', () => {
+  const actualFs = jest.requireActual('fs/promises');
+  return {
+    ...actualFs,
+    unlink: jest.fn(),
+  };
+});
 import * as csvModule from '../parseCsv';
 import { BadRequestError } from '../../../lib/errors';
 

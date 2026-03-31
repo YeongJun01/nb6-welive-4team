@@ -110,6 +110,6 @@ const upload = multer({
 
 // export const uploadAttachments = upload.array('files', 5);
 
-export const uploadImage = upload.single('image');
+export const uploadImage = upload.single('file');
 
 export const uploadCsv = upload.single('file');

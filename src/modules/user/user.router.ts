@@ -5,6 +5,7 @@ import { UserController, UserService, UserRepository } from './';
 import { ResidentListRepository } from '../residentList/residentList.repository';
 import { ResidentListService } from '../residentList/residentList.service';
 import { NotificationRepository } from '../notification/notification.repository';
+import { uploadImage } from '../../middlewares/upload';
 
 const router = Router();
 
@@ -21,7 +22,9 @@ const userService = new UserService(
 const userController = new UserController(userService);
 
 router.use(authMiddleware);
-router.route('/me').patch(asyncHandler(userController.updateProfile.bind(userController)));
+router
+  .route('/me')
+  .patch(uploadImage, asyncHandler(userController.updateProfile.bind(userController)));
 router.route('/password').patch(asyncHandler(userController.updatePassword.bind(userController)));
 
 export default router;

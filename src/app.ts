@@ -16,8 +16,14 @@ import notificationRouter from './modules/notification/notification.router';
 import commentRouter from './modules/comment/comment.router';
 import eventRouter from './modules/event/event.router';
 import { FRONTEND_URL } from './lib/constants';
+import path from 'path';
 
 const app = express();
+
+const UPLOAD_DIR = path.resolve(__dirname, '../public/uploads');
+
+// 👇 이 한 줄이 핵심
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // Middleware 설정
 app.use(express.json());

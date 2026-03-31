@@ -4,6 +4,7 @@ import { UserRepository } from '../user.repository';
 import { ResidentListRepository } from '../../residentList/residentList.repository';
 import { ResidentListService } from '../../residentList/residentList.service';
 import { NotificationRepository } from '../../notification/notification.repository';
+import { get } from 'http';
 
 // Mock 의존성
 const mockUserRepository = {
@@ -13,12 +14,15 @@ const mockUserRepository = {
   findApartmentById: jest.fn(),
   findUsersByRole: jest.fn(),
   findAdminsByApartmentId: jest.fn(),
+  updateResidentStatus: jest.fn(),
 } as unknown as UserRepository;
 
 const mockResidentListRepository = {
   findResidentByUnique: jest.fn(),
   createResidentFromSignUp: jest.fn(),
   updateResidentUserId: jest.fn(),
+  getResidentByUserId: jest.fn(),
+  getResidentById: jest.fn(),
 } as unknown as ResidentListRepository;
 
 const mockResidentListService = {
@@ -165,22 +169,26 @@ describe('UserService', () => {
         id: 'user-1',
         joinStatus: 'APPROVED',
       });
-
-      // updateUserJoinStatus가 repository에 있어야 하므로 직접 추가
-      const mockRepo = mockUserRepository as any;
-      mockRepo.updateUserJoinStatus = jest.fn().mockResolvedValue({
-        id: 'user-1',
-        joinStatus: 'APPROVED',
+      // residentListRepository.getResidentById mock
+      (mockResidentListRepository.getResidentById as jest.Mock).mockResolvedValue({
+        id: 'resident-1',
+        userId: 'user-1',
+        apartmentId: 'apt-1',
       });
 
       const service = new UserService(
-        mockRepo,
+        mockUserRepository,
         mockResidentListRepository,
         mockResidentListService,
         mockNotificationRepository,
       );
 
-      const result = await service.updateUserJoinStatus('admin-1', 'user-1', 'APPROVED' as any, 'USER');
+      const result = await service.updateUserJoinStatus(
+        'admin-1',
+        'user-1',
+        'APPROVED' as any,
+        'USER',
+      );
 
       expect(result.joinStatus).toBe('APPROVED');
     });
@@ -189,6 +197,12 @@ describe('UserService', () => {
       (mockUserRepository.findUserByUnique as jest.Mock).mockResolvedValue({
         id: 'user-1',
         role: 'USER',
+      });
+      // 대상 유저 존재 mock
+      (mockResidentListRepository.getResidentById as jest.Mock).mockResolvedValue({
+        id: 'resident-2',
+        userId: 'user-2',
+        apartmentId: 'apt-1',
       });
 
       await expect(

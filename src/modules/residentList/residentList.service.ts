@@ -127,13 +127,20 @@ export class ResidentListService {
   // 회원가입 데이터로 명부 생성
   // /residents/from-user/{userId} 엔드포인트 사용 안 함 -> 로직에서 바로 함수 사용
   async createResidentFromSignUp(userId: string, data: SignUpDto) {
-    if (!data.apartmentId) {
+    if (!data.apartmentName) {
       throw new BadRequestError('아파트 정보가 필요합니다.');
     }
 
     if (!data.apartmentDong || !data.apartmentHo) {
       throw new BadRequestError('동/호수 정보가 필요합니다.');
     }
+
+    // 아파트 이름으로 id 추출
+    const apartment = await this.userRepository.findApartmentByName(data.apartmentName);
+    if (!apartment) {
+      throw new NotFoundError('존재하지 않는 아파트입니다.');
+    }
+    const apartmentId = apartment.id;
 
     // 이미 user.service에서 확인함
     // const duplicate = await this.residentListRepository.findResidentByUnique({
@@ -150,6 +157,8 @@ export class ResidentListService {
     //   }
     //   return duplicate;
     // }
+
+    data.apartmentId = apartmentId;
 
     await this.residentListRepository.createResidentFromSignUp(userId, data);
   }
