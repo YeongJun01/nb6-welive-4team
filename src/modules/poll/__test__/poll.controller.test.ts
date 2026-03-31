@@ -263,7 +263,7 @@ describe('Poll API 통합 테스트', () => {
 
       // 3. 기본 응답 확인
       expect(res.status).toBe(200);
-      expect(res.body.pollList.length).toBe(2);
+      expect(res.body.polls.length).toBe(2);
       expect(res.body.totalCount).toBe(2);
     });
 
@@ -287,7 +287,7 @@ describe('Poll API 통합 테스트', () => {
 
       // 3. 기본 응답 확인
       expect(res.status).toBe(200);
-      expect(res.body.pollList.length).toBe(1);
+      expect(res.body.polls.length).toBe(1);
     });
 
     it('투표 목록 조회 시 쿼리값에 오류가 있으면 400을 반환한다', async () => {
