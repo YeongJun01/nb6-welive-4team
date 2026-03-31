@@ -22,7 +22,12 @@ const app = express();
 // Middleware 설정
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  }),
+);
 
 app.get('/', (req, res) => {
   res.send('Hello, WeLive!');

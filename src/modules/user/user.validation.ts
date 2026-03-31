@@ -14,7 +14,7 @@ const signUpBase = {
 const signUpUser = s.object({
   ...signUpBase,
   role: s.literal('USER'),
-  apartmentId: s.string(),
+  apartmentName: s.string(),
   apartmentDong: s.string(),
   apartmentHo: s.string(),
 });

@@ -36,6 +36,16 @@ export class UserService {
       throw new ConflictError('이미 가입된 연락처입니다.');
     }
 
+    // 아파트 이름으로 id 추출
+    let aptId: string | undefined;
+    if (data.apartmentName) {
+      const apartment = await this.userRepository.findApartmentByName(data.apartmentName);
+      if (!apartment) {
+        throw new NotFoundError('존재하지 않는 아파트입니다.');
+      }
+      aptId = apartment.id;
+    }
+
     // 3. 비밀번호 암호화
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -43,9 +53,9 @@ export class UserService {
     let currentJoinStatus: Status = Status.PENDING; // default: '승인 대기'
 
     let matchedResidentId: string | null = null;
-    if (data.role === 'USER' && data.apartmentId && data.apartmentDong && data.apartmentHo) {
+    if (data.role === 'USER' && aptId && data.apartmentDong && data.apartmentHo) {
       const resident = await this.residentListRepository.findResidentByUnique({
-        apartmentId: data.apartmentId,
+        apartmentId: aptId,
         apartmentDong: data.apartmentDong,
         apartmentHo: data.apartmentHo,
         contact: data.contact,
