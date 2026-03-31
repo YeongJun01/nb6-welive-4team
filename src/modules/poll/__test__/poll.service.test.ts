@@ -249,27 +249,27 @@ describe('Poll Service 단위 테스트', () => {
     it('[200 / 관리자] 성공적으로 투표 목록을 반환한다', async () => {
       findUserSpy.mockResolvedValue(mockAdmin);
       findBoardByApartmentIdSpy.mockResolvedValue(mockBoard);
-      getPollListSpy.mockResolvedValue({ pollList: mockPoll, totalCount: mockPoll.length });
+      getPollListSpy.mockResolvedValue({ polls: mockPoll, totalCount: mockPoll.length });
 
       const result = await pollService.getPollList(mockQuery, mockAdmin.id);
 
       expect(result).toHaveProperty('totalCount', 3);
-      expect(result.pollList).toHaveLength(3);
-      expect(result.pollList[0]).toHaveProperty('pollId', 'poll1');
+      expect(result.polls).toHaveLength(3);
+      expect(result.polls[0]).toHaveProperty('pollId', 'poll1');
       // BE: UPCOMING -> FE: PENDING 상태 변환 확인
-      expect(result.pollList[0].status).toBe('PENDING');
+      expect(result.polls[0].status).toBe('PENDING');
     });
 
     it('[200 / 일반 유저] 성공적으로 투표 목록을 반환한다', async () => {
       // 유저1은 101동이므로 MockPoll의 마지막 인덱스 제외하여 테스트
       findUserSpy.mockResolvedValue(mockUser1);
       findBoardByApartmentIdSpy.mockResolvedValue(mockBoard);
-      getPollListSpy.mockResolvedValue({ pollList: [mockPoll[0], mockPoll[1]], totalCount: 2 });
+      getPollListSpy.mockResolvedValue({ polls: [mockPoll[0], mockPoll[1]], totalCount: 2 });
 
       const result = await pollService.getPollList(mockQuery, mockUser1.id);
 
       expect(result).toHaveProperty('totalCount', 2);
-      expect(result.pollList).toHaveLength(2);
+      expect(result.polls).toHaveLength(2);
 
       const callArgs = getPollListSpy.mock.calls[0][0];
       expect(callArgs.buildingPermission).toEqual(['101', 'ALL']);
