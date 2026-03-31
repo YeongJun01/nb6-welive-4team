@@ -198,7 +198,7 @@ class PollService {
     );
 
     return {
-      pollList: pollList.map((poll) => this.mapPollList(poll)),
+      polls: pollList.map((poll) => this.mapPollList(poll)),
       totalCount,
     };
   };
