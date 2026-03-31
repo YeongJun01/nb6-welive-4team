@@ -242,7 +242,7 @@ describe('인증 포함 아파트 API', () => {
     expect(res.status).toBe(404);
   });
 
-  it('GET /apartments/:id - 일반 유저 접근 불가', async () => {
+  it('GET /apartments/:id - 일반 유저 기본 정보 확인', async () => {
     // 일반 유저 생성
     const hashed = await bcrypt.hash('1234', 10);
 
@@ -270,6 +270,7 @@ describe('인증 포함 아파트 API', () => {
       .get('/apartments/apt1')
       .set('Authorization', `Bearer ${userToken}`);
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('테스트 아파트');
   });
 });
