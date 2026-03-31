@@ -125,4 +125,10 @@ export class UserRepository {
       where: { apartmentId, role: 'ADMIN', deletedAt: null },
     });
   }
+
+  async findApartmentByName(name: string) {
+    return await this.prisma.apartment.findFirst({
+      where: { name },
+    });
+  }
 }
