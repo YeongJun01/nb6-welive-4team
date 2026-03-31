@@ -26,6 +26,8 @@ app.use(
   cors({
     origin: FRONTEND_URL,
     credentials: true,
+    exposedHeaders: ['Authorization'], // 백엔드(Server) → 프론트엔드(Client), 백엔드 Response에서 Authorization 헤더를 프론트엔드로 전달
+    allowedHeaders: ['Content-Type', 'Authorization'], // 프론트엔드(Client) → 백엔드(Server), 클라이언트 Request에서 Authorization 헤더를 백엔드로 전달
   }),
 );
 
