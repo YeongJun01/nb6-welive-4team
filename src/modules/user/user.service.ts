@@ -38,14 +38,15 @@ export class UserService {
 
     // 아파트 이름으로 id 추출
     let aptId: string | undefined;
-    if (data.apartmentName) {
-      const apartment = await this.userRepository.findApartmentByName(data.apartmentName);
-      if (!apartment) {
-        throw new NotFoundError('존재하지 않는 아파트입니다.');
+    if (data.role === 'USER') {
+      if (data.apartmentName) {
+        const apartment = await this.userRepository.findApartmentByName(data.apartmentName);
+        if (!apartment) {
+          throw new NotFoundError('존재하지 않는 아파트입니다.');
+        }
+        aptId = apartment.id;
       }
-      aptId = apartment.id;
     }
-
     // 3. 비밀번호 암호화
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -68,7 +69,6 @@ export class UserService {
     }
 
     const {
-      apartmentId,
       apartmentDong,
       apartmentHo,
       apartmentName,
@@ -87,7 +87,7 @@ export class UserService {
     } = data;
 
     // 아파트 ID가 있으면 존재 여부 확인
-    let finalApartmentId = apartmentId;
+    let finalApartmentId = aptId;
 
     // ADMIN 가입 시 아파트 함께 생성
     if (data.role === 'ADMIN' && apartmentName) {
@@ -97,13 +97,13 @@ export class UserService {
           address: apartmentAddress!,
           officeNumber: apartmentManagementNumber!,
           description: description!,
-          startComplexNumber: startComplexNumber!,
+          //startComplexNumber: 1,
           endComplexNumber: endComplexNumber!,
-          startBuildingNumber: startBuildingNumber!,
+          //startBuildingNumber: 1,
           endBuildingNumber: endBuildingNumber!,
-          startFloorNumber: startFloorNumber!,
+          //startFloorNumber: 1,
           endFloorNumber: endFloorNumber!,
-          startUnitNumber: startUnitNumber!,
+          //startUnitNumber: 1,
           endUnitNumber: endUnitNumber!,
         },
       });
@@ -173,31 +173,36 @@ export class UserService {
    * @param userId
    * @param updateData
    */
-  async updatedProfile(userId: User['id'], updateData: Prisma.UserUpdateInput) {
+  async updatedProfile(userId: User['id'], updateData: any, file?: Express.Multer.File) {
     // 1. 본인확인
     const checkUser = await this.userRepository.findUserByUnique({ id: userId });
     if (!checkUser) {
       throw new NotFoundError('해당 사용자가 없습니다.');
     }
 
-    // 2. 이메일 중복 체크
-    if (updateData.email) {
-      const checkEmail = await this.userRepository.findUserByUnique({
-        email: updateData.email as string,
-      });
-      if (checkEmail && checkEmail.id !== userId) {
-        throw new ConflictError('이미 가입된 이메일입니다.');
+    // ✅ 비밀번호 변경
+    if (updateData.currentPassword && updateData.newPassword) {
+      const isValid = await bcrypt.compare(
+        updateData.currentPassword as string,
+        checkUser.password,
+      );
+
+      if (!isValid) {
+        throw new UnauthorizedError('현재 비밀번호가 일치하지 않습니다.');
       }
+
+      updateData.password = await bcrypt.hash(updateData.newPassword as string, 10);
+
+      // 👇 DB에 쓸 필요 없는 값 제거
+      delete updateData.currentPassword;
+      delete updateData.newPassword;
     }
 
-    // 3. 연락처 중복 체크
-    if (updateData.contact) {
-      const checkContact = await this.userRepository.findUserByUnique({
-        contact: updateData.contact as string,
-      });
-      if (checkContact && checkContact.id !== userId) {
-        throw new ConflictError('이미 가입된 연락처입니다.');
-      }
+    // ✅ 프로필 이미지
+    if (file) {
+      const uploadedFile = file as Express.Multer.File & { location?: string };
+
+      updateData.avatar = uploadedFile.location || `/uploads/${uploadedFile.filename}`;
     }
 
     return await this.userRepository.updateUser(userId, updateData);
@@ -248,6 +253,21 @@ export class UserService {
     if (!requestUser) {
       throw new NotFoundError('요청자가 존재하지 않습니다.');
     }
+
+    // 2. 대상 유저 확인
+    let targetUser: any | null = null;
+    if (role === 'USER') {
+      targetUser = await this.residentListRepository.getResidentById(userId);
+      if (!targetUser) {
+        throw new NotFoundError('대상 유저가 존재하지 않습니다.');
+      }
+      userId = targetUser.userId!; // residentList에서 userId 추출하여 재할당
+    } else {
+      targetUser = await this.userRepository.findUserByUnique({ id: userId });
+      if (!targetUser) {
+        throw new NotFoundError('대상 유저가 존재하지 않습니다.');
+      }
+    }
     // 2. 권한 검증
     const isAuthorized =
       (requestUser.role === 'ADMIN' && role === 'USER') ||
@@ -258,6 +278,11 @@ export class UserService {
     }
 
     // 3. 승인/거절 처리
+    if (requestUser.role === 'SUPER_ADMIN') {
+      await this.userRepository.updateApartmentStatus(targetUser.apartmentId!, status);
+    } else if (requestUser.role === 'ADMIN') {
+      await this.userRepository.updateResidentStatus(targetUser.id, status);
+    }
     return await this.userRepository.updateUserJoinStatus(userId, status);
   }
 

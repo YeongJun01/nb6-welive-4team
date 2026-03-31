@@ -131,4 +131,20 @@ export class UserRepository {
       where: { name },
     });
   }
+
+  // 입주민 상태 변경
+  async updateResidentStatus(residentId: string, status: Status) {
+    return await this.prisma.residentList.update({
+      where: { id: residentId },
+      data: { approvalStatus: status },
+    });
+  }
+
+  // 관리자 아파트 상태 변경
+  async updateApartmentStatus(apartmentId: string, status: Status) {
+    return await this.prisma.apartment.update({
+      where: { id: apartmentId },
+      data: { apartmentStatus: status },
+    });
+  }
 }

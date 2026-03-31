@@ -65,9 +65,8 @@ const signUp = s.object({
 });
 
 const updateProfile = s.object({
-  name: s.optional(s.string()),
-  email: s.optional(s.string()),
-  contact: s.optional(s.string()),
+  currentPassword: s.optional(s.string()),
+  newPassword: s.optional(s.string()),
   avatar: s.optional(s.string()),
 });
 

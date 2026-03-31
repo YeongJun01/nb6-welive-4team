@@ -22,6 +22,7 @@ const mockUserRepository = {
 const mockResidentListRepository = {
   findResidentByUnique: jest.fn().mockResolvedValue(null),
   createResidentFromSignUp: jest.fn(),
+  updateResidentUserId: jest.fn(),
 } as any;
 
 const mockResidentListService = {
@@ -124,8 +125,10 @@ describe('Auth API 엔드포인트', () => {
 
   describe('POST /auth/signup', () => {
     it('입주민 회원가입 성공 시 201을 반환한다', async () => {
+      // 기본 UserRepository mocks
       (mockUserRepository.findUserByUnique as jest.Mock).mockResolvedValue(null);
       (mockUserRepository.findApartmentByName as jest.Mock).mockResolvedValue({ id: 'apt-1' });
+      (mockUserRepository.findApartmentById as jest.Mock).mockResolvedValue({ id: 'apt-1' });
       (mockUserRepository.findAdminsByApartmentId as jest.Mock).mockResolvedValue([]);
       (mockUserRepository.createUser as jest.Mock).mockResolvedValue({
         id: 'new-user-1',
@@ -136,6 +139,14 @@ describe('Auth API 엔드포인트', () => {
         apartmentId: 'apt-1',
       });
 
+      // ResidentListRepository mocks
+      (mockResidentListRepository.findResidentByUnique as jest.Mock).mockResolvedValue(null); // 신규 유저 → approved 아님
+      (mockResidentListRepository.updateResidentUserId as jest.Mock).mockResolvedValue(null);
+
+      // ResidentListService mocks
+      (mockResidentListService.createResidentFromSignUp as jest.Mock).mockResolvedValue(null);
+
+      // 실제 요청
       const res = await request(app).post('/auth/signup').send({
         username: 'newuser',
         password: 'test1234',
@@ -147,6 +158,7 @@ describe('Auth API 엔드포인트', () => {
         apartmentHo: '501',
       });
 
+      // 검증
       expect(res.status).toBe(201);
       expect(res.body.name).toBe('신규유저');
       expect(res.body.role).toBe('USER');
