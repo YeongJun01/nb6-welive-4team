@@ -33,16 +33,17 @@ class PollService {
   };
 
   private customBuildingPermission = (buildingPermission: string[]) => {
-    // 빈 배열, 공백 제거
+    // 빈 배열, 공백 제거 및 대문자 표준화 (all -> ALL)
     const filteredBuildingPermission = buildingPermission
-      .map((b: string) => b.trim())
+      .map((b: string) => b.trim().toUpperCase())
       .filter((b: string) => b !== '');
 
-    // 완전한 빈 배열인 경우, ALL로 설정
-    const customBuildingPermission =
-      filteredBuildingPermission.length === 0 ? ['ALL'] : filteredBuildingPermission;
+    // 완전한 빈 배열이거나 'ALL'이 포함된 경우 ALL만 반환하도록 표준화
+    if (filteredBuildingPermission.length === 0 || filteredBuildingPermission.includes('ALL')) {
+      return ['ALL'];
+    }
 
-    return customBuildingPermission;
+    return filteredBuildingPermission;
   };
 
   private dbMappedStatus = (status: string) => {
