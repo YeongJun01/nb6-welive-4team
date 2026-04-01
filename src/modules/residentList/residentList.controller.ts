@@ -79,7 +79,7 @@ export class ResidentListController {
     }
 
     const result = await this.residentListService.deleteResident(userId, id);
-    res.status(200).json(result);
+    res.status(204).json(result);
   }
 
   // 입주민 정보 삭제 (soft delete)
@@ -94,7 +94,7 @@ export class ResidentListController {
     }
 
     const result = await this.residentListService.softDeleteResident(userId, id);
-    res.status(200).json(result);
+    res.status(204).json(result);
   }
 
   // 입주민 여러개 생성 (csv)

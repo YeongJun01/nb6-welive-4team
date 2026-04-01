@@ -3,9 +3,19 @@ import pollStruct from './poll.validation';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
 import pollRepository, { userRepo, boardRepo } from './poll.repository';
 import cron from 'node-cron';
+import { GetPollListFromDB, GetPollDetailFromDB, GetPollListQuery } from './poll.dto';
 
 type Poll = Infer<typeof pollStruct.pollInformation>;
 type UpdatePoll = Infer<typeof pollStruct.updatePoll>;
+type MapPollOption = {
+  id: string;
+  content: string;
+  voteCount: number;
+};
+
+type GetPollListQueryFromService = Omit<GetPollListQuery, 'orderBy'> & {
+  orderBy: 'oldest' | 'newest';
+};
 
 class PollService {
   private dateCheck = (startDate: Date, endDate: Date) => {
@@ -23,16 +33,17 @@ class PollService {
   };
 
   private customBuildingPermission = (buildingPermission: string[]) => {
-    // 빈 배열, 공백 제거
+    // 빈 배열, 공백 제거 및 대문자 표준화 (all -> ALL)
     const filteredBuildingPermission = buildingPermission
-      .map((b: string) => b.trim())
+      .map((b: string) => b.trim().toUpperCase())
       .filter((b: string) => b !== '');
 
-    // 완전한 빈 배열인 경우, ALL로 설정
-    const customBuildingPermission =
-      filteredBuildingPermission.length === 0 ? ['ALL'] : filteredBuildingPermission;
+    // 완전한 빈 배열이거나 'ALL'이 포함된 경우 ALL만 반환하도록 표준화
+    if (filteredBuildingPermission.length === 0 || filteredBuildingPermission.includes('ALL')) {
+      return ['ALL'];
+    }
 
-    return customBuildingPermission;
+    return filteredBuildingPermission;
   };
 
   private dbMappedStatus = (status: string) => {
@@ -61,12 +72,12 @@ class PollService {
     }
   };
 
-  private mapPollList = (poll: any) => {
+  private mapPollList = (poll: GetPollListFromDB) => {
     return {
       pollId: poll.id,
       userId: poll.adminId,
       title: poll.title,
-      writerName: poll.admin?.name,
+      writerName: poll.admin!.name,
       buildingPermission: poll.buildingPermission,
       createdAt: poll.createdAt,
       updatedAt: poll.updatedAt,
@@ -76,20 +87,20 @@ class PollService {
     };
   };
 
-  private mapPollInfo = (poll: any) => {
+  private mapPollInfo = (poll: GetPollDetailFromDB) => {
     return {
       ...this.mapPollList(poll),
       content: poll.description,
       boardName: '주민투표',
-      options: poll.pollOptions.map((option: any) => ({
+      options: poll.pollOptions.map((option: MapPollOption) => ({
         id: option.id,
         title: option.content,
-        voteCount: option.voteCount === null ? 0 : option.voteCount,
+        voteCount: option.voteCount,
       })),
     };
   };
 
-  private mapPollInfoUpdate = (poll: any) => {
+  private mapPollInfoUpdate = (poll: GetPollDetailFromDB) => {
     return {
       title: poll.title,
       content: poll.description,
@@ -97,7 +108,7 @@ class PollService {
       startDate: poll.startDate,
       endDate: poll.endDate,
       status: this.getMappedStatus(poll.status),
-      options: poll.pollOptions.map((option: any) => ({
+      options: poll.pollOptions.map((option: { content: string }) => ({
         title: option.content,
       })),
     };
@@ -116,7 +127,7 @@ class PollService {
     }
 
     // 게시판 정보, 타입, 게시 권한 확인
-    const board = await boardRepo.getBoardInfoByApartmentId(admin.apartmentId!);
+    const board = await boardRepo.getBoardById(data.boardId);
     if (!board) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
     }
@@ -155,7 +166,7 @@ class PollService {
   };
 
   // 투표 목록 조회
-  getPollList = async (query: any, userId: string) => {
+  getPollList = async (query: GetPollListQueryFromService, userId: string) => {
     // 유저 정보 및 게시판 정보 확인
     const user = await userRepo.getUserInfo(userId);
     if (!user) {
@@ -182,13 +193,13 @@ class PollService {
       customBuildingPermission = [user.residentLists!.apartmentDong, 'ALL'];
     }
 
-    const { pollList, totalCount } = await pollRepository.getPollList(
+    const { polls, totalCount } = await pollRepository.getPollList(
       { ...query, status: pollStatus, orderBy, buildingPermission: customBuildingPermission },
       board.id,
     );
 
     return {
-      pollList: pollList.map((poll: any) => this.mapPollList(poll)),
+      polls: polls.map((poll) => this.mapPollList(poll)),
       totalCount,
     };
   };
@@ -219,6 +230,8 @@ class PollService {
       throw new ForbiddenError('투표 조회 권한이 없습니다');
     }
 
+    // 현재 API 명세에는 ViewCount가 없지만 향후 추가될 것을 염두하여 사전 작업 진행
+    // 필요 한 경우 데이터 리팩토링(mapPollInfo)시 viewCount 항목만 추가하면 됨
     const pollDetail = await pollRepository.getPollAndUpdateViewCount(pollId);
     const poll = this.mapPollInfo(pollDetail);
 

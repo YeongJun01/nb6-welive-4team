@@ -20,10 +20,17 @@ export class UserController {
    * POST /api/auth/signup/admin - 관리자 회원가입
    */
   async signUpAdmin(req: Request, res: Response) {
-    const data = mask({ ...req.body, role: 'ADMIN' }, userStruct.signUpAdmin);
+    const mappedData = {
+      ...req.body,
+      startBuildingNumber: req.body.startDongNumber,
+      endBuildingNumber: req.body.endDongNumber,
+      startUnitNumber: req.body.startHoNumber,
+      endUnitNumber: req.body.endHoNumber,
+    };
+    const data = mask({ ...mappedData, role: 'ADMIN' }, userStruct.signUpAdmin);
     const user = await this.userService.signUp(data);
-    const { id, name, email, joinStatus, role } = user;
-    res.status(201).json({ id, name, email, joinStatus, role });
+    const { id, name, email, joinStatus, role, apartmentId } = user;
+    res.status(201).json({ id, name, email, joinStatus, role, apartmentId });
   }
 
   /**
@@ -42,7 +49,7 @@ export class UserController {
   async updateProfile(req: Request, res: Response) {
     const userId = req.user!.id;
     const updateData = mask(req.body, userStruct.updateProfile);
-    const updatedUser = await this.userService.updatedProfile(userId, updateData);
+    const updatedUser = await this.userService.updatedProfile(userId, updateData, req.file);
     res.status(200).json({
       message: `${updatedUser.name}님의 정보가 성공적으로 업데이트되었습니다. 다시 로그인해주세요.`,
     });
@@ -53,7 +60,9 @@ export class UserController {
    */
   async updatePassword(req: Request, res: Response) {
     const userId = req.user!.id;
+    console.log('updatePassword - request body:', req.body);
     const updateData = create(req.body, userStruct.updatePassword);
+    console.log('updatePassword - updateData:', updateData);
     const userData = await this.userService.updatePassword(userId, updateData);
     res
       .status(200)
@@ -67,12 +76,7 @@ export class UserController {
     const requestId = req.user!.id;
     const adminId = req.params.adminId as string;
     const { status } = create(req.body, userStruct.updateStatusById);
-    await this.userService.updateUserJoinStatus(
-      requestId,
-      adminId,
-      status,
-      'ADMIN',
-    );
+    await this.userService.updateUserJoinStatus(requestId, adminId, status, 'ADMIN');
     res.status(200).json({ message: '작업이 성공적으로 완료되었습니다' });
   }
 
@@ -93,12 +97,7 @@ export class UserController {
     const requestId = req.user!.id;
     const residentId = req.params.residentId as string;
     const { status } = create(req.body, userStruct.updateStatusById);
-    await this.userService.updateUserJoinStatus(
-      requestId,
-      residentId,
-      status,
-      'USER',
-    );
+    await this.userService.updateUserJoinStatus(requestId, residentId, status, 'USER');
     res.status(200).json({ message: '작업이 성공적으로 완료되었습니다' });
   }
 

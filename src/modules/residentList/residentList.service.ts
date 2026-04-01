@@ -1,11 +1,12 @@
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
-import apartmentRepository from '../apartment/apartment.repository';
 import { UserRepository } from '../user';
 import { CreateResidentDto, IsHouseholder, ResidentStatus } from './residentList.dto';
 import { ResidentListRepository } from './residentList.repository';
 import { parseCsv } from './parseCsv';
-import fs from 'fs/promises';
+import fsPromises from 'fs/promises';
 import { SignUpDto } from '../user/user.dto';
+import axios from 'axios';
+import fs from 'fs';
 
 export class ResidentListService {
   constructor(
@@ -126,13 +127,20 @@ export class ResidentListService {
   // 회원가입 데이터로 명부 생성
   // /residents/from-user/{userId} 엔드포인트 사용 안 함 -> 로직에서 바로 함수 사용
   async createResidentFromSignUp(userId: string, data: SignUpDto) {
-    if (!data.apartmentId) {
+    if (!data.apartmentName) {
       throw new BadRequestError('아파트 정보가 필요합니다.');
     }
 
     if (!data.apartmentDong || !data.apartmentHo) {
       throw new BadRequestError('동/호수 정보가 필요합니다.');
     }
+
+    // 아파트 이름으로 id 추출
+    const apartment = await this.userRepository.findApartmentByName(data.apartmentName);
+    if (!apartment) {
+      throw new NotFoundError('존재하지 않는 아파트입니다.');
+    }
+    const apartmentId = apartment.id;
 
     // 이미 user.service에서 확인함
     // const duplicate = await this.residentListRepository.findResidentByUnique({
@@ -149,6 +157,8 @@ export class ResidentListService {
     //   }
     //   return duplicate;
     // }
+
+    data.apartmentId = apartmentId;
 
     await this.residentListRepository.createResidentFromSignUp(userId, data);
   }
@@ -212,25 +222,27 @@ export class ResidentListService {
       throw new NotFoundError('입주민을 찾을 수 없습니다.');
     }
 
-    await this.residentListRepository.updateResident(residentId, data);
+    const updatedResident = await this.residentListRepository.updateResident(residentId, data);
 
     const result = {
       id: resident.id,
       userId: resident.userId,
       apartmentId: resident.apartmentId,
-      building: resident.apartmentDong,
-      unitNumber: resident.apartmentHo,
-      contact: resident.contact,
-      name: resident.name,
+      building: updatedResident.apartmentDong,
+      unitNumber: updatedResident.apartmentHo,
+      contact: updatedResident.contact,
+      name: updatedResident.name,
       //email: resident.email,
       residenceStatus: resident.isRegistered
         ? ResidentStatus.RESIDENCE
         : ResidentStatus.NO_RESIDENCE,
-      isHouseholder: resident.isHouseholder ? IsHouseholder.HOUSEHOLDER : IsHouseholder.MEMBER,
+      isHouseholder: updatedResident.isHouseholder
+        ? IsHouseholder.HOUSEHOLDER
+        : IsHouseholder.MEMBER,
       isRegistered: resident.isRegistered,
       approvalStatus: resident.approvalStatus,
       createdAt: resident.createdAt,
-      updatedAt: resident.updatedAt,
+      updatedAt: updatedResident.updatedAt,
     };
 
     return result;
@@ -287,6 +299,19 @@ export class ResidentListService {
   async createResidentsByCsv(userId: string, file: Express.Multer.File) {
     const user = await this.userRepository.findUserByUnique({ id: userId });
 
+    const isS3 = process.env.STORAGE_TYPE === 's3';
+
+    let stream;
+
+    if (isS3) {
+      const response = await axios.get((file as any).location, {
+        responseType: 'stream',
+      });
+      stream = response.data;
+    } else {
+      stream = fs.createReadStream(file.path);
+    }
+
     if (!user) {
       throw new NotFoundError('사용자를 찾을 수 없습니다.');
     }
@@ -301,7 +326,7 @@ export class ResidentListService {
       throw new NotFoundError('사용자의 아파트 정보를 찾을 수 없습니다.');
     }
 
-    const rows = await parseCsv(file.path);
+    const rows = await parseCsv(stream);
 
     if (rows.length === 0) {
       throw new BadRequestError('CSV 파일이 비어 있습니다.');
@@ -371,7 +396,13 @@ export class ResidentListService {
 
     const result = await this.residentListRepository.createManyResidents(apartmentId, residents);
 
-    await fs.unlink(file.path);
+    if (!isS3 && file.path) {
+      try {
+        await fsPromises.unlink(file.path);
+      } catch (err: any) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+    }
 
     return {
       message: `${result.count}개의 입주민 정보가 성공적으로 생성되었습니다.`,

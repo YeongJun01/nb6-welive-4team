@@ -1,7 +1,11 @@
+.claude
+CLAUDE.md
+
 node_modules
 dist
 .env
+.env.test
 __http__
-test
+/test
 docs
 public

@@ -5,15 +5,22 @@ import { AuthService, AuthController } from './';
 import { UserController, UserRepository, UserService } from '../user';
 import { ResidentListRepository } from '../residentList/residentList.repository';
 import { ResidentListService } from '../residentList/residentList.service';
+import { NotificationRepository } from '../notification/notification.repository';
 
 const router = Router();
 
 const userRepository = new UserRepository(prisma);
 const residentListRepository = new ResidentListRepository(prisma);
+const notificationRepository = new NotificationRepository(prisma);
 const residentListService = new ResidentListService(residentListRepository, userRepository);
 const authService = new AuthService(userRepository);
 const authController = new AuthController(authService);
-const userService = new UserService(userRepository, residentListRepository, residentListService);
+const userService = new UserService(
+  userRepository,
+  residentListRepository,
+  residentListService,
+  notificationRepository,
+);
 const userController = new UserController(userService);
 
 // Public routes (인증 불필요)

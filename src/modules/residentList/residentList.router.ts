@@ -10,13 +10,18 @@ import { asyncHandler } from '../../middlewares/asyncHandler';
 import { uploadCsv } from '../../middlewares/upload';
 
 const router = Router();
-router.use(authMiddleware);
-
 const residentListService = new ResidentListService(
   new ResidentListRepository(prisma),
   new UserRepository(prisma),
 );
 const residentListController = new ResidentListController(residentListService);
+
+router
+  .route('/file/template')
+  .get(
+    asyncHandler(residentListController.downloadResidentCsvTemplate.bind(residentListController)),
+  );
+router.use(authMiddleware);
 
 router
   .route('/')
@@ -31,12 +36,6 @@ router
   );
 
 router
-  .route('/file/template')
-  .get(
-    asyncHandler(residentListController.downloadResidentCsvTemplate.bind(residentListController)),
-  );
-
-router
   .route('/file')
   .get(asyncHandler(residentListController.downloadResidentsCsv.bind(residentListController)));
 
@@ -46,5 +45,7 @@ router
   .patch(asyncHandler(residentListController.updateResident.bind(residentListController)))
   .delete(asyncHandler(residentListController.deleteResident.bind(residentListController)))
   .put(asyncHandler(residentListController.softDeleteResident.bind(residentListController)));
+
+// FE 확인 결과 : /residents/from-user/{userId} API는 필요하지 않음, 따라서 백엔드 개발에서 생략함
 
 export default router;

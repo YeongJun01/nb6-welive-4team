@@ -2,6 +2,17 @@ import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import crypto from 'crypto';
 import { Request } from 'express';
+import fs from 'fs';
+import multerS3 from 'multer-s3';
+import { S3Client } from '@aws-sdk/client-s3';
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY!,
+    secretAccessKey: process.env.AWS_SECRET_KEY!,
+  },
+});
 
 // 첨부파일 저장 경로
 const UPLOAD_DIR = path.resolve(__dirname, '../../public/uploads');
@@ -30,24 +41,50 @@ const ALLOWED_EXT = [
 ];
 
 // storage 설정
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, UPLOAD_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
+let storage;
 
-    if (!ALLOWED_EXT.includes(ext)) {
-      const error = new multer.MulterError('LIMIT_UNEXPECTED_FILE');
-      error.message = '허용되지 않은 파일 형식입니다.';
-      return cb(error, '');
-    }
+if (process.env.STORAGE_TYPE === 's3') {
+  // S3 저장
+  storage = multerS3({
+    s3,
+    bucket: process.env.S3_BUCKET!,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
 
-    // 원본명 + 랜덤값 (확장자 유지)
-    const filename = `${crypto.randomUUID()}${ext}`;
-    cb(null, filename);
-  },
-});
+      if (!ALLOWED_EXT.includes(ext)) {
+        const error = new multer.MulterError('LIMIT_UNEXPECTED_FILE');
+        error.message = '허용되지 않은 파일 형식입니다.';
+        return cb(error, '');
+      }
+
+      const filename = `uploads/${crypto.randomUUID()}${ext}`;
+      cb(null, filename);
+    },
+  });
+} else {
+  // 로컬 저장
+  storage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      if (!fs.existsSync(UPLOAD_DIR)) {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      }
+      cb(null, UPLOAD_DIR);
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+
+      if (!ALLOWED_EXT.includes(ext)) {
+        const error = new multer.MulterError('LIMIT_UNEXPECTED_FILE');
+        error.message = '허용되지 않은 파일 형식입니다.';
+        return cb(error, '');
+      }
+
+      const filename = `${crypto.randomUUID()}${ext}`;
+      cb(null, filename);
+    },
+  });
+}
 
 // MIME 타입 검사 (너무 엄격하지 않게)
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
@@ -73,6 +110,6 @@ const upload = multer({
 
 // export const uploadAttachments = upload.array('files', 5);
 
-export const uploadImage = upload.single('image');
+export const uploadImage = upload.single('file');
 
 export const uploadCsv = upload.single('file');

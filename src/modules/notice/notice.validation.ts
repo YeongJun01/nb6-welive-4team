@@ -13,7 +13,7 @@ const noticeInfo = s.object({
   title: s.string(),
   content: s.string(),
   boardId: commonStruct.uuid,
-  isPinned: commonStruct.boolean,
+  isPinned: s.defaulted(commonStruct.boolean, false),
   startDate: s.optional(commonStruct.date),
   endDate: s.optional(commonStruct.date),
 });

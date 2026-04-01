@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { PORT, CORS_ORIGIN } from './lib/constants';
 import cookieParser from 'cookie-parser';
 import apartmentRouter from './modules/apartment/apartment.router';
 import { defaultNotFoundHandler, errorHandler } from './middlewares/errorHandler';
@@ -15,8 +16,14 @@ import notificationRouter from './modules/notification/notification.router';
 import commentRouter from './modules/comment/comment.router';
 import eventRouter from './modules/event/event.router';
 import { FRONTEND_URL } from './lib/constants';
+import path from 'path';
 
 const app = express();
+
+const UPLOAD_DIR = path.resolve(__dirname, '../public/uploads');
+
+// 👇 이 한 줄이 핵심
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // Middleware 설정
 app.use(express.json());
@@ -25,6 +32,8 @@ app.use(
   cors({
     origin: FRONTEND_URL,
     credentials: true,
+    exposedHeaders: ['Authorization'], // 백엔드(Server) → 프론트엔드(Client), 백엔드 Response에서 Authorization 헤더를 프론트엔드로 전달
+    allowedHeaders: ['Content-Type', 'Authorization'], // 프론트엔드(Client) → 백엔드(Server), 클라이언트 Request에서 Authorization 헤더를 백엔드로 전달
   }),
 );
 

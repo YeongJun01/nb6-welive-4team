@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma, Status, User } from '@prisma/client';
+import { PrismaClient, Prisma, Status, User, BoardType } from '@prisma/client';
 
 export class UserRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -91,6 +91,60 @@ export class UserRepository {
         },
         residentLists: true,
       },
+    });
+  }
+
+  /**
+   * 10. 역할(role)로 유저 목록 조회
+   */
+  async findUsersByRole(role: User['role']) {
+    return await this.prisma.user.findMany({
+      where: { role, deletedAt: null },
+    });
+  }
+
+  /**
+   * 11. 아파트에 기본 Board 3개 생성 (NOTICE, COMPLAINT, POLL)
+   */
+  async createDefaultBoards(apartmentId: string, adminId: string) {
+    const boardTypes = [BoardType.NOTICE, BoardType.COMPLAINT, BoardType.POLL];
+    return await this.prisma.board.createMany({
+      data: boardTypes.map((boardType) => ({
+        apartmentId,
+        adminId,
+        boardType,
+      })),
+    });
+  }
+
+  /**
+   * 12. 특정 아파트의 관리자 조회
+   */
+  async findAdminsByApartmentId(apartmentId: string) {
+    return await this.prisma.user.findMany({
+      where: { apartmentId, role: 'ADMIN', deletedAt: null },
+    });
+  }
+
+  async findApartmentByName(name: string) {
+    return await this.prisma.apartment.findFirst({
+      where: { name },
+    });
+  }
+
+  // 입주민 상태 변경
+  async updateResidentStatus(residentId: string, status: Status) {
+    return await this.prisma.residentList.update({
+      where: { id: residentId },
+      data: { approvalStatus: status },
+    });
+  }
+
+  // 관리자 아파트 상태 변경
+  async updateApartmentStatus(apartmentId: string, status: Status) {
+    return await this.prisma.apartment.update({
+      where: { id: apartmentId },
+      data: { apartmentStatus: status },
     });
   }
 }

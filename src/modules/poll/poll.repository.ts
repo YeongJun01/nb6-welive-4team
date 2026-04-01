@@ -5,6 +5,8 @@ import pollStruct from './poll.validation';
 import { Prisma } from '@prisma/client';
 import { NotificationRepository } from '../notification/notification.repository';
 
+import { GetPollListQuery } from './poll.dto';
+
 type DbPollStatus = 'UPCOMING' | 'ONGOING' | 'CLOSED';
 
 type Poll = Omit<Infer<typeof pollStruct.pollInformation>, 'status' | 'startDate' | 'endDate'> & {
@@ -13,15 +15,32 @@ type Poll = Omit<Infer<typeof pollStruct.pollInformation>, 'status' | 'startDate
   endDate: Date;
 };
 
+type CreatePollResult = Prisma.PollGetPayload<{
+  include: { board: true };
+}>;
+
 type UpdatePoll = Omit<Infer<typeof pollStruct.updatePoll>, 'status' | 'startDate' | 'endDate'> & {
   status: DbPollStatus;
   startDate: Date;
   endDate: Date;
 };
 
-type OrderBy = 'asc' | 'desc';
+type notificationData = Pick<
+  Prisma.NotificationCreateInput,
+  'notiType' | 'title' | 'content' | 'url'
+>;
 
-type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
+type notiType = 'POLL_START' | 'POLL_SET' | 'POLL_END';
+
+type pollOption = {
+  pollId?: string;
+  title: string;
+};
+
+type GetPollListQueryFromDB = Omit<GetPollListQuery, 'status'> & {
+  status: DbPollStatus | undefined;
+};
+type GetPollListFilter = Prisma.PollWhereInput;
 
 // User 검색용 레포지토리
 class UserRepo {
@@ -73,9 +92,19 @@ class PollRepository {
   constructor(private readonly notificationRepository: NotificationRepository) {}
 
   // 아파트 입주민 조회 (권한 필터링 포함)
-  private getApartmentMembers = async (tx: any, poll: any) => {
+  private getApartmentMembers = async (tx: Prisma.TransactionClient, poll: Poll) => {
+    return;
+  };
+
+  // 투표 관련 알림 발송
+  private sendPollNotifications = async (
+    tx: Prisma.TransactionClient,
+    poll: CreatePollResult,
+    notiType: notiType,
+  ) => {
     const isAll = poll.buildingPermission.includes('ALL');
-    return await tx.residentList.findMany({
+
+    const apartmentMembers = await tx.residentList.findMany({
       where: {
         apartmentId: poll.board.apartmentId,
         userId: { not: null },
@@ -84,12 +113,8 @@ class PollRepository {
       },
       select: { userId: true },
     });
-  };
 
-  // 투표 관련 알림 발송
-  private sendPollNotifications = async (tx: any, poll: any, notiType: any) => {
-    const apartmentMembers = await this.getApartmentMembers(tx, poll);
-    const notiData: any = {
+    const notificationData: notificationData = {
       notiType,
       title: poll.title,
       content: poll.description,
@@ -97,14 +122,14 @@ class PollRepository {
     };
 
     await Promise.all(
-      apartmentMembers.map((member: any) =>
-        this.notificationRepository.createNotification(tx, notiData, member.userId!),
+      apartmentMembers.map((member) =>
+        this.notificationRepository.createNotification(tx, notificationData, member.userId!),
       ),
     );
   };
 
   // 투표 기반 공지사항 생성
-  private createNoticeFromPoll = async (tx: any, poll: any) => {
+  private createNoticeFromPoll = async (tx: Prisma.TransactionClient, poll: CreatePollResult) => {
     await tx.notice.create({
       data: {
         boardId: poll.boardId,
@@ -131,7 +156,7 @@ class PollRepository {
           description: content,
           pollOptions: {
             // 투표 옵션 생성
-            create: options.map((option: any) => ({
+            create: options.map((option: pollOption) => ({
               content: option.title,
             })),
           },
@@ -145,18 +170,20 @@ class PollRepository {
         },
         include: {
           board: true,
+          admin: { select: { name: true } },
+          pollOptions: true,
         },
       });
 
-      const notiData: notiData = {
-        notiType: 'POLL_SET' as any,
+      const notificationData: notificationData = {
+        notiType: 'POLL_SET',
         title: data.title,
         content: data.content,
         url: `/poll/${newPoll.id}`,
       };
 
       // 투표 생성 시 관리자에게 알림
-      await this.notificationRepository.createNotification(tx, notiData, adminId);
+      await this.notificationRepository.createNotification(tx, notificationData, adminId);
 
       // 투표 적용 입주민 확인 및 알림 발송
       await this.sendPollNotifications(tx, newPoll, 'POLL_SET');
@@ -166,9 +193,9 @@ class PollRepository {
   };
 
   // 투표 목록 조회
-  getPollList = async (query: any, boardId: string) => {
+  getPollList = async (query: GetPollListQueryFromDB, boardId: string) => {
     // 투표 목록 조회 필터링
-    const getPollFilter: any = {
+    const getPollFilter: GetPollListFilter = {
       boardId,
       buildingPermission: query.buildingPermission
         ? { hasSome: query.buildingPermission }
@@ -192,6 +219,7 @@ class PollRepository {
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         include: {
+          board: true,
           admin: { select: { name: true } },
         },
       }),
@@ -201,7 +229,7 @@ class PollRepository {
       }),
     ]);
 
-    return { pollList, totalCount };
+    return { polls: pollList, totalCount };
   };
 
   // 투표 상세 조회
@@ -232,6 +260,7 @@ class PollRepository {
       where: { id: pollId },
       data: { viewCount: { increment: 1 } },
       include: {
+        board: true,
         admin: { select: { name: true } },
         pollOptions: {
           select: {
@@ -258,6 +287,8 @@ class PollRepository {
           description: content,
         },
         include: {
+          board: true,
+          admin: { select: { name: true } },
           pollOptions: true,
         },
       });
@@ -270,7 +301,7 @@ class PollRepository {
       });
 
       await db.pollOption.createMany({
-        data: options.map((option: any) => ({
+        data: options.map((option: pollOption) => ({
           pollId: newPoll.id,
           content: option.title,
         })),
@@ -299,6 +330,9 @@ class PollRepository {
         where: { id: pollId },
         data: {
           deletedAt: new Date(),
+          pollOptions: {
+            deleteMany: {},
+          },
         },
       });
 

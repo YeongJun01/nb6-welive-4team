@@ -5,9 +5,15 @@ import noticeStruct from './notice.validation';
 
 import { Prisma } from '@prisma/client';
 import { NotificationRepository } from '../notification/notification.repository';
+import { GetNoticeListQuery } from './notice.dto';
 
-type noticeData = Infer<typeof noticeStruct.noticeInfo>;
-type notiData = Pick<Prisma.NotificationCreateInput, 'notiType' | 'title' | 'content' | 'url'>;
+type CreateNoticeData = Infer<typeof noticeStruct.noticeInfo> & { eventData?: boolean };
+type GetNoticeListFilter = Prisma.NoticeWhereInput;
+type notificationData = Pick<
+  Prisma.NotificationCreateInput,
+  'notiType' | 'title' | 'content' | 'url'
+>;
+export type UpdateNoticeData = Partial<Infer<typeof noticeStruct.noticeInfo>>;
 
 // User 검색용 레포지토리
 class UserRepo {
@@ -58,7 +64,7 @@ export { userRepo, boardRepo };
 class NoticeRepository {
   constructor(private readonly notificationRepository: NotificationRepository) {}
 
-  createNotice = async (data: any, adminId: string) => {
+  createNotice = async (data: CreateNoticeData, adminId: string) => {
     const { eventData, ...noticeData } = data;
     return await prisma.$transaction(async (tx) => {
       const notice = await prisma.notice.create({
@@ -79,7 +85,7 @@ class NoticeRepository {
         },
       });
 
-      const notiData: notiData = {
+      const notificationData: notificationData = {
         notiType: 'NOTICE',
         title: data.title,
         content: data.content,
@@ -87,7 +93,7 @@ class NoticeRepository {
       };
 
       // 공지사항 생성 시 관리자에게 알림
-      await this.notificationRepository.createNotification(tx, notiData, adminId);
+      await this.notificationRepository.createNotification(tx, notificationData, adminId);
 
       // 공지사항 적용 입주민 확인
       const apartmentMembers = await tx.user.findMany({
@@ -101,7 +107,7 @@ class NoticeRepository {
       // 공지사항 생성 시 입주민에게 알림
       await Promise.all(
         apartmentMembers.map((member) =>
-          this.notificationRepository.createNotification(tx, notiData, member.id),
+          this.notificationRepository.createNotification(tx, notificationData, member.id),
         ),
       );
 
@@ -109,8 +115,8 @@ class NoticeRepository {
     });
   };
 
-  getNoticeList = async (query: any, boardId: string) => {
-    const getNoticeFilter: any = {
+  getNoticeList = async (query: GetNoticeListQuery, boardId: string) => {
+    const getNoticeFilter: GetNoticeListFilter = {
       boardId,
       category: query.category ? query.category : undefined,
       deletedAt: null,
@@ -179,11 +185,21 @@ class NoticeRepository {
             name: true,
           },
         },
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
       },
     });
   };
 
-  updateNotice = async (data: any, noticeId: string, adminId: string, isDate: boolean) => {
+  updateNotice = async (
+    data: UpdateNoticeData,
+    noticeId: string,
+    adminId: string,
+    isDate: boolean,
+  ) => {
     return await prisma.$transaction(async (tx) => {
       const notice = await tx.notice.update({
         where: { id: noticeId },
@@ -191,7 +207,7 @@ class NoticeRepository {
           ...data,
           events: {
             deleteMany: {},
-            ...(isDate ? { create: { adminId, title: data.title } } : {}),
+            ...(isDate ? { create: { adminId, title: data.title! } } : {}),
           },
         },
         include: {
@@ -205,15 +221,15 @@ class NoticeRepository {
         },
       });
 
-      const notiData: notiData = {
+      const notificationData: notificationData = {
         notiType: 'NOTICE',
-        title: data.title,
-        content: data.content,
-        url: `/notice/${notice.id}`,
+        title: notice.title,
+        content: notice.content,
+        url: `/notices/${notice.id}`,
       };
 
       // 공지사항 수정 시 관리자에게 알림
-      await this.notificationRepository.createNotification(tx, notiData, adminId);
+      await this.notificationRepository.createNotification(tx, notificationData, adminId);
 
       // 공지사항 수정 시 입주민에게 알림
       const apartmentMembers = await tx.user.findMany({
@@ -226,7 +242,7 @@ class NoticeRepository {
 
       await Promise.all(
         apartmentMembers.map((member) =>
-          this.notificationRepository.createNotification(tx, notiData, member.id),
+          this.notificationRepository.createNotification(tx, notificationData, member.id),
         ),
       );
 

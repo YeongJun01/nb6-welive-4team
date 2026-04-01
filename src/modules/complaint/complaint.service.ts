@@ -3,6 +3,7 @@ import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors
 import { Infer } from 'superstruct';
 import complaintStruct from './complaint.validation';
 import { ComplaintResponse, ComplaintDetailResponse } from './complaint.type';
+import { ComplaintListFromDB, ComplaintDetailFromDB } from './complaint.dto';
 
 type Complaint = Infer<typeof complaintStruct.complaintInformation>;
 type ComplaintUpdate = Infer<typeof complaintStruct.complaintUpdate>;
@@ -10,7 +11,7 @@ type ComplaintListQuery = Infer<typeof complaintStruct.getComplaintList>;
 type status = Infer<typeof complaintStruct.complaintStatus>;
 
 class ComplaintService {
-  private mapComplaintList = (complaint: any): ComplaintResponse => {
+  private mapComplaintList = (complaint: ComplaintListFromDB): ComplaintResponse => {
     return {
       complaintId: complaint.id,
       userId: complaint.creatorId,
@@ -27,12 +28,12 @@ class ComplaintService {
     };
   };
 
-  private mapComplaintDetail = (complaint: any): ComplaintDetailResponse => {
+  private mapComplaintDetail = (complaint: ComplaintDetailFromDB): ComplaintDetailResponse => {
     return {
       ...this.mapComplaintList(complaint),
       content: complaint.content,
       boardType: '민원',
-      comments: complaint.comments?.map((comment: any) => ({
+      comments: complaint.comments?.map((comment) => ({
         id: comment.id,
         userId: comment.userId,
         content: comment.content,
@@ -55,7 +56,7 @@ class ComplaintService {
     }
 
     // 게시판 정보, 타입, 권한 확인
-    const board = await boardRepo.getBoardWithId(data.boardId);
+    const board = await boardRepo.getBoardById(data.boardId);
     if (!board) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
     }
@@ -70,11 +71,13 @@ class ComplaintService {
 
     const userInfo = {
       creatorId: user.id,
-      apartmentDong: user.residentLists?.apartmentDong,
-      apartmentHo: user.residentLists?.apartmentHo,
+      apartmentDong: user.residentLists!.apartmentDong,
+      apartmentHo: user.residentLists!.apartmentHo,
     };
 
-    const complaint = await complaintRepository.createComplaint(data, userInfo, board.adminId);
+    const createComplaintData = { ...data, ...userInfo };
+
+    const complaint = await complaintRepository.createComplaint(createComplaintData, board.adminId);
 
     return complaint;
   };
@@ -102,7 +105,7 @@ class ComplaintService {
       throw new ForbiddenError('민원 조회 권한이 없습니다.');
     }
 
-    const complaintBoard = await boardRepo.getBoardInfoWithApartmentId(user.apartmentId!);
+    const complaintBoard = await boardRepo.getBoardByApartmentId(user.apartmentId!);
 
     if (!complaintBoard) {
       throw new NotFoundError('게시판 정보를 찾을 수 없습니다');
@@ -117,7 +120,7 @@ class ComplaintService {
     );
 
     return {
-      complaints: originComplaintList.complaintList.map((complaint: any) =>
+      complaints: originComplaintList.complaintList.map((complaint: ComplaintListFromDB) =>
         this.mapComplaintList(complaint),
       ),
       totalCount: originComplaintList.totalCount,
@@ -189,7 +192,7 @@ class ComplaintService {
     }
 
     if (admin.id !== complaint.adminId) {
-      throw new BadRequestError('민원 상태를 수정할 수 없는 사용자입니다.');
+      throw new ForbiddenError('민원 상태를 수정할 수 없는 사용자입니다.');
     }
 
     const updatedComplaint = await complaintRepository.updateComplaintStatus(complaintId, status);

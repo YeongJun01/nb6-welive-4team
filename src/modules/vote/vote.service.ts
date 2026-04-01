@@ -2,6 +2,7 @@ import voteRepository from './vote.repository';
 import { userRepo } from '../poll/poll.repository';
 import prisma from '../../lib/prisma';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../lib/errors';
+import { Prisma } from '@prisma/client';
 
 class VoteService {
   private validateVoteAbility = async (optionId: string, userId: string) => {
@@ -31,6 +32,18 @@ class VoteService {
       throw new ForbiddenError('투표 권한이 없습니다.');
     }
 
+    // 투표권한 체크: 동별 권한 제한 확인
+    const { buildingPermission } = pollDetail.poll;
+    const userDong = user.residentLists?.apartmentDong;
+
+    if (!userDong) {
+      throw new ForbiddenError('입주민 정보가 등록되지 않아 투표할 수 없습니다.');
+    }
+
+    if (!buildingPermission.includes('ALL') && !buildingPermission.includes(userDong)) {
+      throw new ForbiddenError('해당 동은 투표 권한이 없습니다.');
+    }
+
     return pollDetail;
   };
 
@@ -44,7 +57,7 @@ class VoteService {
       throw new BadRequestError('이미 투표하셨습니다.');
     }
 
-    const pollVote = await prisma.$transaction(async (tx: any) => {
+    const pollVote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await voteRepository.createVote(pollDetail.pollId, optionId, userId, tx);
       await voteRepository.updateVoteCount(pollDetail.pollId, optionId, tx);
       return await voteRepository.getPollByOptionId(optionId, tx);
@@ -63,7 +76,7 @@ class VoteService {
       throw new BadRequestError('투표하지 않았습니다.');
     }
 
-    const pollVote = await prisma.$transaction(async (tx: any) => {
+    const pollVote = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await voteRepository.deleteVote(pollDetail.pollId, userId, tx);
       await voteRepository.updateVoteCount(pollDetail.pollId, optionId, tx);
       return await voteRepository.getPollByOptionId(optionId, tx);

@@ -6,7 +6,6 @@ import {
   ApartmentResponseWithRangeDto,
   ApartmentResponseWithRangePublicDto,
 } from './apartment.dto';
-import { start } from 'node:repl';
 
 class ApartmentService {
   // [Q1] 입주자/비로그인 유저용 아파트 목록 조회 (공개 정보만)
@@ -180,11 +179,6 @@ class ApartmentService {
         end: `${String(apartment.endFloorNumber)}${String(apartment.endUnitNumber).padStart(2, '0')}`,
       },
     };
-  }
-
-  // 아파트 생성
-  async createApartment(data: CreateApartmentDto) {
-    return await apartmentRepository.createApartment(data);
   }
 }
 

@@ -3,12 +3,14 @@ import noticeRepository from './notice.repository';
 import { userRepo, boardRepo } from './notice.repository';
 import { Infer } from 'superstruct';
 import noticeStruct from './notice.validation';
+import { GetNoticeListFromDB, GetNoticeDetailFromDB } from './notice.dto';
+import { UpdateNoticeData } from './notice.repository';
 
 type Notice = Infer<typeof noticeStruct.noticeInfo>;
 type NoticeListQuery = Infer<typeof noticeStruct.getNoticeList>;
 
 class NoticeService {
-  private mapNoticeData = (data: any) => {
+  private mapNoticeData = (data: GetNoticeListFromDB) => {
     return {
       noticeId: data.id,
       userId: data.adminId,
@@ -23,20 +25,14 @@ class NoticeService {
     };
   };
 
-  private mapNoticeUpdate = (data: any) => {
+  private mapNoticeDetail = (data: GetNoticeDetailFromDB) => {
     return {
       ...this.mapNoticeData(data),
       content: data.content,
       startDate: data.startDate,
       endDate: data.endDate,
-    };
-  };
-
-  private mapNoticeDetail = (data: any) => {
-    return {
-      ...this.mapNoticeUpdate(data),
       boardName: '공지사항',
-      comments: data.comments.map((comment: any) => ({
+      comments: data.comments.map((comment) => ({
         id: comment.id,
         userId: comment.userId,
         content: comment.content,
@@ -115,7 +111,7 @@ class NoticeService {
     const noticeList = await noticeRepository.getNoticeList({ ...query, orderBy }, noticeBoard.id);
 
     return {
-      notices: noticeList.noticeList.map((notice: any) => this.mapNoticeData(notice)),
+      notices: noticeList.noticeList.map((notice) => this.mapNoticeData(notice)),
       totalCount: noticeList.totalCount,
     };
   };
@@ -184,12 +180,12 @@ class NoticeService {
     const isDate = data.startDate && data.endDate ? true : false;
 
     // 변경 할 데이터 가공
-    const changedData = {
+    const changedData: UpdateNoticeData = {
       category: data.category,
       title: data.title,
       content: data.content,
-      startDate: data.startDate ?? null,
-      endDate: data.endDate ?? null,
+      startDate: data.startDate,
+      endDate: data.endDate,
       isPinned: data.isPinned,
     };
 
@@ -201,7 +197,7 @@ class NoticeService {
       isDate,
     );
 
-    const notice = this.mapNoticeData(updatedNotice);
+    const notice = this.mapNoticeData(updatedNotice as GetNoticeListFromDB);
     return notice;
   };
 

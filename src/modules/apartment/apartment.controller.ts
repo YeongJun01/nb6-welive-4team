@@ -2,7 +2,7 @@
 import prisma from '../../lib/prisma';
 import { Request, Response, NextFunction } from 'express';
 import apartmentService from './apartment.service';
-import { NotFoundError, UnauthorizedError } from '../../lib/errors';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../../lib/errors';
 
 class ApartmentController {
   // 1. 아파트 목록 조회
@@ -38,6 +38,9 @@ class ApartmentController {
     } else if (role === 'ADMIN') {
       // 일반 관리자: 본인이 관리하는 아파트 (user.id가 adminId가 됩니다)
       result = await apartmentService.getApartmentForAdmin(user.id, { keyword, name, address });
+    } else {
+      // 일반 유저: 입주자/비로그인 유저
+      throw new ForbiddenError('권한이 없습니다.');
     }
 
     return res.status(200).json(result);
@@ -68,7 +71,7 @@ class ApartmentController {
     if (!user) {
       throw new UnauthorizedError('유저를 찾을 수 없습니다.');
     }
-    const role = user?.role;
+    const role = user.role;
 
     let result;
 
@@ -76,9 +79,12 @@ class ApartmentController {
     if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
       // 관리자용 상세 조회 (관리자 정보 포함)
       result = await apartmentService.getApartmentByIdForAdmin(id);
-    } else {
-      // 일반용 상세 조회 (공개 정보만)
+    } else if (role === 'USER') {
+      // 일반 유저(입주자): 공개 정보 기반 상세 조회 (동/호 범위 정보 포함)
       result = await apartmentService.getApartmentByIdForPublic(id);
+    } else {
+      // 인증(로그인) 필요
+      throw new ForbiddenError('권한이 없습니다.');
     }
 
     // 조회된 결과가 없을 경우(null)에 대한 처리
